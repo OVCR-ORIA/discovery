@@ -1,0 +1,28 @@
+DROP TABLE IF EXISTS college_university;
+CREATE TABLE IF NOT EXISTS college_university (
+  id INTEGER(15) NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL COMMENT 'Common name of this institution',
+  ope_id VARCHAR(15) NULL COMMENT 'U.S. Dept. of Education Office of Postsecondary Education identifier for this institution',
+  ipeds_id VARCHAR(15) NULL COMMENT 'U.S. Dept. of Education Integrated Postsecondary Education Data System identifier for this institution',
+  address VARCHAR(255) NULL COMMENT 'Mailing address for this institution',
+  city VARCHAR(255) NULL COMMENT 'City for mailing address for this institution',
+  state_province VARCHAR(15) NULL COMMENT 'State or province for mailing address for this institution',
+  country INTEGER(15) NOT NULL COMMENT 'Reference to the nation where this institution is located',
+  postcode VARCHAR(15) NULL COMMENT 'The received textual postcode for mailing this institution',
+  postcode_ref INTEGER(15) NULL COMMENT 'Reference to the normalized postcode for mailing this institution',
+  telephone VARCHAR(15) NULL COMMENT 'Contact telephone number for this institution',
+  website VARCHAR(255) NULL COMMENT 'Primary Web site address for this institution',
+  minority_serving BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this institution is a Minority-Serving Institution (MSI)',
+  historically_black BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this institution is a Historically Black College or University (HBCU)',
+  predominantly_black BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this is a Predominantly Black Institution (PBI)',
+  highly_hispanic BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this is a high-Hispanic-enrollment institution',
+  hispanic_serving BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this is a Hispanic-Serving Institution (HSI)',
+  tribal BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this is a Tribal College or University (TCU)',
+  native_non_tribal BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this is a Native-American Serving Non-Tribal Institution (NASNTI)',
+  asian_native_pacific BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this is an Asian-American and Native American Pacific Islander-Serving Institution (AANAPISI)',
+  alaskan_hawaiian BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Indicates that this is an Alaskan Native or Native Hawaiian serving institution (AANH)',
+  PRIMARY KEY (id),
+  UNIQUE (ipeds_id),
+  FOREIGN KEY fk_college_country (country) REFERENCES country (id),
+  FOREIGN KEY fk_college_postcode (postcode_ref) REFERENCES postcode (id)
+) COMMENT = 'Master list of post-secondary educational institutions.';

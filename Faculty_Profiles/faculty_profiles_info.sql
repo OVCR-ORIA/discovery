@@ -1,0 +1,63 @@
+SET FEEDBACK OFF;
+SET HEADING OFF;
+SET LINESIZE 1000;
+SET PAGESIZE 0;
+SET TRIMSPOOL ON;
+SPOOL /content/discovery/Faculty_Profiles/faculty_info;
+SELECT '"' || EDW_PERS_ID || '","' || BANNER_PIDM || '","' || UIN ||
+    '","' || NETID_PRINCIPAL || '@' || NETID_DOMAIN || '","' ||
+    PERS_NAME_PREFIX || '","' || PERS_FNAME || '","' || PERS_MNAME ||
+    '","' || PERS_LNAME || '","' || PERS_NAME_SUFFIX || '","' ||
+    JOB_DETL_TITLE || '","' || ORG_CD || '","' || ORG_TITLE || '","'
+    || CAMPUS_LEVEL_1_CD || '","' || CAMPUS_LEVEL_1_TITLE || '","' ||
+    ADMIN_LEVEL_2_CD || '","' || ADMIN_LEVEL_2_TITLE || '","' ||
+    COLL_LEVEL_3_CD || '","' || COLL_LEVEL_3_TITLE || '","' ||
+    SCHOOL_SUB_COLL_LEVEL_4_CD || '","' ||
+    SCHOOL_SUB_COLL_LEVEL_4_TITLE || '","' || DEPT_LEVEL_5_CD || '","'
+    || DEPT_LEVEL_5_TITLE || '","' || DEPT_SUB_ORG_LEVEL_6_CD || '","'
+    || DEPT_SUB_ORG_LEVEL_6_TITLE || '","' || DEPT_SUB_ORG_LEVEL_7_CD
+    || '","' || DEPT_SUB_ORG_LEVEL_7_TITLE || '","' || fte ||
+    '"' record
+  FROM ( SELECT pers.EDW_PERS_ID, BANNER_PIDM, UIN,
+      NETID_PRINCIPAL, NETID_DOMAIN,
+      PERS_NAME_PREFIX, PERS_FNAME, PERS_MNAME, PERS_LNAME,
+      PERS_NAME_SUFFIX, appt.JOB_DETL_TITLE,
+      org.ORG_CD, org.ORG_TITLE,
+      org.CAMPUS_LEVEL_1_CD, org.CAMPUS_LEVEL_1_TITLE,
+      org.ADMIN_LEVEL_2_CD, org.ADMIN_LEVEL_2_TITLE,
+      org.COLL_LEVEL_3_CD, org.COLL_LEVEL_3_TITLE,
+      org.SCHOOL_SUB_COLL_LEVEL_4_CD,
+      org.SCHOOL_SUB_COLL_LEVEL_4_TITLE,
+      org.DEPT_LEVEL_5_CD, org.DEPT_LEVEL_5_TITLE,
+      org.DEPT_SUB_ORG_LEVEL_6_CD, org.DEPT_SUB_ORG_LEVEL_6_TITLE,
+      org.DEPT_SUB_ORG_LEVEL_7_CD, org.DEPT_SUB_ORG_LEVEL_7_TITLE,
+      SUM( appt.JOB_DETL_FTE ) fte
+    FROM T_PERS pers
+      JOIN V_EMPEE_PERS_HIST_1 phist
+        ON pers.EDW_PERS_ID = phist.EDW_PERS_ID
+      JOIN V_JOB_DETL_HIST_1 appt ON appt.EDW_PERS_ID = pers.EDW_PERS_ID
+      JOIN T_ORG_CD_HIST org ON org.ORG_CD = appt.ORG_CD
+      JOIN T_NETID net ON net.EDW_PERS_ID = pers.EDW_PERS_ID
+    WHERE appt.JOB_DETL_EMPEE_CLS_CD = 'AA'
+      AND appt.JOB_DETL_DATA_STATUS_DESC = 'Current'
+      AND appt.JOB_DETL_STATUS_DESC <> 'Terminated'
+      AND PERS_CUR_INFO_IND = 'Y'
+      AND org.ORG_CD_CUR_INFO_IND = 'Y'
+      AND org.COA_CD = '1'
+      AND net.EMPEE_HOME_CAMPUS_IND = 'Y'
+    GROUP BY pers.EDW_PERS_ID, BANNER_PIDM, UIN,
+      NETID_PRINCIPAL, NETID_DOMAIN,
+      PERS_NAME_PREFIX, PERS_FNAME, PERS_MNAME, PERS_LNAME,
+      PERS_NAME_SUFFIX, appt.JOB_DETL_TITLE,
+      org.ORG_CD, org.ORG_TITLE,
+      org.CAMPUS_LEVEL_1_CD, org.CAMPUS_LEVEL_1_TITLE,
+      org.ADMIN_LEVEL_2_CD, org.ADMIN_LEVEL_2_TITLE,
+      org.COLL_LEVEL_3_CD, org.COLL_LEVEL_3_TITLE,
+      org.SCHOOL_SUB_COLL_LEVEL_4_CD,
+      org.SCHOOL_SUB_COLL_LEVEL_4_TITLE,
+      org.DEPT_LEVEL_5_CD, org.DEPT_LEVEL_5_TITLE,
+      org.DEPT_SUB_ORG_LEVEL_6_CD, org.DEPT_SUB_ORG_LEVEL_6_TITLE,
+      org.DEPT_SUB_ORG_LEVEL_7_CD, org.DEPT_SUB_ORG_LEVEL_7_TITLE
+    ORDER BY PERS_LNAME, PERS_FNAME, PERS_MNAME, PERS_NAME_SUFFIX,
+      PERS_NAME_PREFIX, -fte, org.ORG_CD ) listing;
+SPOOL OFF;
