@@ -2,15 +2,18 @@
 # -*- encoding: utf-8 -*-
 
 """
+load data into ORIA DB
+
 Helper library for loading data from various sources into the ORIA
-database.
+database.  Includes offline mockup for testing and development, and
+command-line arguments for connection.
 
 Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"19 September 2014" # yarr!
-__version__ = 1.3
+__date__ = u"11 February 2015"
+__version__ = 1.4
 
 import argparse
 from MySQLdb import connect
@@ -221,9 +224,9 @@ class DBConnection( object ):
 
         Use read_many() to get an iterator over multiple rows.
 
-        NOTE that we assume that a cursor exists; that this is a read
-        statement; and that the statement itself is relatively sane
-        and sanitized.
+        NOTE that we assume that a cursor exists; that this is a
+        select statement; and that the statement itself is relatively
+        sane and sanitized.
         """
         if self.offline:
             if self._debug:
@@ -262,7 +265,7 @@ class DBConnection( object ):
 
         Use read() to directly get a single result row instead.
 
-        NOTE that we assume that this is a read statement, and that
+        NOTE that we assume that this is a select statement, and that
         the statement itself is sane and sanitized.  We create a
         cursor for the use of this query; if other queries will be
         made incrementally based on the results of this one, a
@@ -338,9 +341,9 @@ class DBConnection( object ):
         """
         Write to the database, if online; fake it if not.
 
-        NOTE that we assume that a cursor exists; that this is a read
-        statement; and that the statement itself is relatively sane
-        and sanitized.
+        NOTE that we assume that a cursor exists; that this is an
+        insert or update statement; and that the statement itself is
+        relatively sane and sanitized.
         """
         if not self._db_write:
             if self._debug:
