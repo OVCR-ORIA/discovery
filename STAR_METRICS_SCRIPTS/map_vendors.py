@@ -24,7 +24,7 @@ FOREIGN_RE = r'^F(.*)$'
 VENDOR_HEADER = [ "PeriodStartDate", "PeriodEndDate",
                   "UniqueAwardNumber", "RecipientAccountNumber",
                   "VendorDunsNumber", "VendorPaymentAmount" ]
-ZIP_RE = r'^Z([0-9]{5})(-?[0-9]+)?$'
+ZIP_RE = r'^Z([0-9]{5})([^0-9]?[0-9]+)?$'
 
 class VendorInfoError( Exception ):
     """
