@@ -7,6 +7,7 @@
 --     period2  - second period
 --     period3  - third period
 --     coas     - chart
+-- revised 2/13/2015 mnevill to add fund type 4E to the selection with fund type 4C
 -- 4A and 4Y
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",        
@@ -142,7 +143,7 @@ where frbgrnt_coas_code = '&&coas'
     and fgbtrnd_posting_period in ('&&period1', '&&period2', '&&period3') 
 group by frbgrnt_code,  frbgrnt_title         
 union all
--- if 4C , no cfda code, use 00.200
+-- if 4C or 4E , no cfda code, use 00.200
 -- for the rest of the uniqueawardnumber, if the frbgrnt_sponsor_id is not null, use it, otherwise use the frbgrnt_title
 -- not 99.MULTI
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
@@ -165,7 +166,7 @@ where frbgrnt_coas_code = '&&coas'
     and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no  
     and frvcfda_cfda_code != '99.MULTI'  
     and ftvfund_grnt_code = frbgrnt_code  
-    and ftvfund_ftyp_code = '4C' 
+    and ftvfund_ftyp_code in ('4C', '4E') 
     and ftvfund_data_entry_ind = 'Y'
     and ftvfund_nchg_date = TO_DATE ('12/31/2099', 'MM/DD/YYYY')      
     and fgbtrnd_coas_code = ftvfund_coas_code
@@ -209,7 +210,7 @@ where frbgrnt_coas_code = '&&coas'
     and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no   
     and frvcfda_cfda_code != '99.MULTI'        
     and ftvfund_grnt_code = frbgrnt_code  
-    and ftvfund_ftyp_code = '4C' 
+    and ftvfund_ftyp_code in ('4C', '4E') 
     and ftvfund_data_entry_ind = 'Y'
     and ftvfund_nchg_date = TO_DATE ('12/31/2099', 'MM/DD/YYYY')      
     and fgbtrnd_coas_code = ftvfund_coas_code
@@ -244,7 +245,7 @@ where frbgrnt_coas_code = '&&coas'
     and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no  
     and frvcfda_cfda_code != '99.MULTI'  
     and ftvfund_grnt_code = frbgrnt_code  
-    and ftvfund_ftyp_code = '4C' 
+    and ftvfund_ftyp_code in ('4C', '4E')  
     and ftvfund_data_entry_ind = 'Y'
     and ftvfund_nchg_date = TO_DATE ('12/31/2099', 'MM/DD/YYYY')      
     and fgbtrnd_coas_code = ftvfund_coas_code
@@ -270,7 +271,7 @@ where frbgrnt_coas_code = '&&coas'
     and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no   
     and frvcfda_cfda_code = '99.MULTI'        
     and ftvfund_grnt_code = frbgrnt_code  
-    and ftvfund_ftyp_code = '4C' 
+    and ftvfund_ftyp_code in ('4C', '4E')  
     and ftvfund_data_entry_ind = 'Y'
     and ftvfund_nchg_date = TO_DATE ('12/31/2099', 'MM/DD/YYYY')      
     and fgbtrnd_coas_code = ftvfund_coas_code
@@ -294,7 +295,7 @@ where frbgrnt_coas_code = '&&coas'
     and frbgrnt_sponsor_id is not null
     and frbgrnt_cfda_internal_id_no is null      
     and ftvfund_grnt_code = frbgrnt_code  
-    and ftvfund_ftyp_code = '4C' 
+    and ftvfund_ftyp_code in ('4C', '4E')  
     and ftvfund_data_entry_ind = 'Y'
     and ftvfund_nchg_date = TO_DATE ('12/31/2099', 'MM/DD/YYYY')      
     and fgbtrnd_coas_code = ftvfund_coas_code
@@ -318,7 +319,7 @@ where frbgrnt_coas_code = '&&coas'
     and frbgrnt_sponsor_id is null
     and frbgrnt_cfda_internal_id_no is null      
     and ftvfund_grnt_code = frbgrnt_code  
-    and ftvfund_ftyp_code = '4C' 
+    and ftvfund_ftyp_code in ('4C', '4E')  
     and ftvfund_data_entry_ind = 'Y'
     and ftvfund_nchg_date = TO_DATE ('12/31/2099', 'MM/DD/YYYY')      
     and fgbtrnd_coas_code = ftvfund_coas_code
