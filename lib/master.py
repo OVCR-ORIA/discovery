@@ -44,7 +44,11 @@ def _write_with_integrity( db, stmt, params ):
         db.finish()
     return
 
-def add_external_org(): pass
+def add_external_org():
+    """
+    Unimplemented.
+    """
+    raise NotImplementedError
 
 def add_external_org_alias( db, org_id, alias, source_id, lang='en',
                             comment=None ):
@@ -114,9 +118,34 @@ def add_external_org_postcode( db, org_id, postcode_id, source_id,
                              comment ) )
     return
 
-def add_external_org_relationship(): pass
+def add_external_org_relationship( db, org_1_id, org_2_id,
+                                   rel_type_id, source_id,
+                                   comment=None ):
+    """
+    Assert a relationship between two external organizations.  The two
+    organizations, the nature of the relationship, and the source are
+    all identified by their IDs.  Note that the order of the
+    organizations matters!
 
-def del_external_org(): pass
+    Will silently succeed if the relationship is already asserted,
+    even if marked as expired.  Will raise MasterNonExistentEntity if
+    the organizations, relationship type, or source IDs are not valid.
+    """
+    update_stmt = "INSERT IGNORE INTO " + \
+                  "master_rel_external_external " + \
+                  "( ext1, ext2, rel, source, source_comment ) " + \
+                  "VALUES ( %s, %s, %s, %s, %s );"
+    _write_with_integrity( db, update_stmt,
+                           ( org_1_id, org_2_id, rel_type_id,
+                             source_id, comment ) )
+
+    return
+
+def del_external_org():
+    """
+    Unimplemented.
+    """
+    raise NotImplementedError
 
 def del_external_org_alias( db, org_id, alias, source_id, lang='en',
                             comment=None ):
@@ -230,6 +259,84 @@ def del_external_org_postcode( db, org_id, postcode_id, source_id,
 
     return
 
-def del_external_org_relationship(): pass
-def merge_external_org(): pass
-def rename_external_org(): pass
+def del_external_org_relationship( db, org_1_id, org_2_id,
+                                   rel_type_id, source_id,
+                                   comment=None ):
+    """
+    Mark the given inter-organizational relationship as no longer
+    valid.  The orgs, relationship type, and source are all identified
+    by ID.
+
+    Will silently succeed if the relationship is unasserted, or
+    already marked as expired.
+    """
+    db.start()
+    find_stmt = "SELECT * FROM master_rel_external_external " + \
+                "WHERE ext1 = %s AND ext2 = %s " + \
+                "AND rel = %s AND valid_end IS NULL;"
+    org_rel = db.read( find_stmt,
+                       ( org_1_id, org_2_id, rel_type_id ) )
+    db.finish()
+
+    if org_rel is None:
+        # We didn’t find anything to expire.
+        return
+
+    update_stmt = "UPDATE master_rel_external_external " + \
+                  "SET valid_end = NOW(), source = %s"
+    params = ( source_id, )
+
+    # Update the comment if one was given, but not otherwise.
+    if comment is not None:
+        update_stmt += ", source_comment = %s"
+        params += ( comment, )
+
+    update_stmt += " WHERE ext1 = %s AND ext2 = %s " + \
+                   "AND rel = %s AND valid_end IS NULL;"
+    params += ( org_1_id, org_2_id, rel_type_id )
+    _write_with_integrity( db, update_stmt, ( params ) )
+
+    return
+
+def merge_external_org():
+    """
+    Unimplemented.
+    """
+    raise NotImplementedError
+
+def rename_external_org( db, org_id, new_name, source_id,
+                         comment=None, alias_old_name=True ):
+    """
+    Give a new name to an external organization.  The org and the
+    source are identified by their IDs.  By default, make the old
+    name an English alias for the organization.
+
+    This does not update the source or start date for the
+    organization, though it will do so for the alias created, if any.
+
+    Will silently succeed if the organization already has that name.
+    Will raise MasterNonExistentEntity if the organization ID is not
+    valid, or if the source ID is not valid and an alias is created.
+    """
+    db.start()
+    find_stmt = "SELECT name FROM master_external_org " + \
+                "WHERE id = %s;"
+    ext_org_name = db.read( find_stmt, ( org_id, ) )
+    db.finish()
+
+    if ext_org is None:
+        raise MasterNonExistentEntity(
+            "There is no external organization with ID %d." % org_id
+        )
+
+    old_name = ext_org_name[0]
+
+    update_stmt = "UPDATE master_external_org SET name = %s " + \
+                  "WHERE id = %s;"
+    _write_with_integrity( db, update_stmt, ( new_name, org_id ) )
+
+    if alias_old_name:
+        add_external_org_alias( db, org_id, old_name, source_id,
+                                comment=comment )
+
+    return
