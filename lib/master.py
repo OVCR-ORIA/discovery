@@ -19,7 +19,7 @@ Written for the University of Illinois.
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
 __date__ = u"16 February 2015"
-__version__ = 1.0
+__version__ = 1.1
 
 from _mysql import IntegrityError
 
@@ -29,6 +29,16 @@ class MasterNonExistentEntity( Exception ):
     located.
     """
     pass
+
+class SchemeNonExistent(Exception):
+    """
+    Raised when an unknown scheme is specified.
+    """
+
+class DataSourceNonExistent(Exception):
+    """
+    Raised when an unknown data source is specified.
+    """
 
 def _write_with_integrity( db, stmt, params ):
     """
@@ -340,3 +350,91 @@ def rename_external_org( db, org_id, new_name, source_id,
                                 comment=comment )
 
     return
+
+def get_scheme_id(db, scheme_name):
+    """
+    Get the scheme identifier for a given scheme name.
+
+    Args:
+        db: The db instance
+        scheme_name: The name of the scheme
+
+    Returns:
+        str: The scheme id for the given scheme name
+
+    Raises:
+        SchemeNonExistent: If an unknown scheme name is specified
+    """
+    db.start()
+    find_stmt = "SELECT id FROM master_other_id_scheme " + \
+                "WHERE name = %s;"
+    result = db.read(find_stmt, (scheme_name, ))
+    db.finish()
+
+    if result is None:
+        raise SchemeNonExistent("Unknown scheme: %s" % scheme_name)
+
+    scheme_id = result[0]
+    return scheme_id
+
+def get_supported_schemes(db):
+    """
+    Get the list of supported scheme names.
+
+    Args:
+        db: The db instance
+
+    Returns:
+        list of str: The supported scheme names
+    """
+    db.start()
+    find_stmt = "SELECT name FROM master_other_id_scheme;"
+    results = db.read_many(find_stmt, ())
+    db.finish()
+
+    scheme_names = [result[0] for result in results]
+    return scheme_names
+
+def get_data_source_id(db, source_name):
+    """
+    Get the source identifier for a given source name.
+
+    Args:
+        db: The db instance
+        source_name: The source name
+
+    Returns:
+        str: The source id for the given source name
+
+    Raises:
+        DataSourceNonExistent: If an unknown source name is specified
+    """
+    db.start()
+    find_stmt = "SELECT id FROM master_data_source " + \
+                "WHERE name = %s;"
+    result = db.read(find_stmt, (source_name, ))
+    db.finish()
+
+    if result is None:
+        raise DataSourceNonExistent("Unknown data source: %s" % source_name)
+
+    source_id = result[0]
+    return source_id
+
+def get_supported_data_sources(db):
+    """
+    Get the list of supported data sources.
+
+    Args:
+        db: The db instance
+
+    Returns:
+        list of str: The supported data sources
+    """
+    db.start()
+    find_stmt = "SELECT name FROM master_data_source;"
+    results = db.read_many(find_stmt, ())
+    db.finish()
+
+    source_names = [result[0] for result in results]
+    return source_names
