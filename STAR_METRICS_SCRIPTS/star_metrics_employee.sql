@@ -31,13 +31,19 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
               then 'Faculty'  
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
            and ntrpcls_pgrp_code = 05
-              then 'Faculty'                           
+              then 'Faculty'   
+         when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BB' 
+           and ntrpcls_pgrp_code = 99
+              then 'Faculty'                                      
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = '32' 
            and ntrpcls_pgrp_code in (09, 10, 11, 12, 14) 
               then 'Research Support' 
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'A3' 
            and ntrpcls_pgrp_code = 11
               then 'Research Support'  
+         when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
+           and ntrpcls_pgrp_code = 16
+              then 'Research Support'               
          when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = '3A' 
            and ntrpcls_pgrp_code = 12
               then 'Research Support'                  
@@ -56,6 +62,12 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = '4Z' 
            and ntrpcls_pgrp_code = 10
               then 'Research Support' 
+         when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'CA' 
+           and ntrpcls_pgrp_code = 14
+              then 'Research Support'   
+         when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'CC' 
+           and ntrpcls_pgrp_code = 99
+              then 'Research Support'                          
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
            and ntrpcls_pgrp_code in (09, 10, 11, 12, 14) 
               then 'Research Support'   
@@ -85,8 +97,11 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
           when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'AC' 
            and ntrpcls_pgrp_code = 11
               then 'Research Support' 
+         when substr(nbrjobs_ecls_code, 1,2) = 'SA' and ntrpcls_ecls_code = 'SA' 
+           and ntrpcls_pgrp_code = 99
+              then 'Research Support'               
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = '32' 
-           and ntrpcls_pgrp_code in (05, 13, 15) 
+           and ntrpcls_pgrp_code in (05, 13) 
               then 'Technician/Staff Scientist'  
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
            and ntrpcls_pgrp_code in (13, 15) 
@@ -108,8 +123,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when nbrjobs_ecls_code in ('PA', 'PB')   
               then 'Research Analyst/Coordinator' 
          when nbrjobs_ecls_code = 'RA'   
-              then 'Post Graduate Researcher'  
-         else nbrjobs_ecls_code||' '||ntrpcls_ecls_code||' '||ntrpcls_pgrp_code
+              then 'Post Graduate Researcher'
+         when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = '32' 
+           and ntrpcls_pgrp_code = 15 
+              then 'Clinicians'  
+         when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'CG' 
+           and ntrpcls_pgrp_code = 15 
+              then 'Clinicians'                          
+         when substr(nbrjobs_ecls_code, 1,2) = 'SA' and ntrpcls_ecls_code = '90' 
+           and ntrpcls_pgrp_code = 99
+              then 'Undergraduate Student'                            
+-- the following line of code is used to research items that default because they don't match any of the 
+-- above criteria                
+--         else spriden_pidm||' '||nbrjobs_ecls_code||' '||ntrpcls_ecls_code||' '||ntrpcls_pgrp_code
+         else 'Research Support'          
          END as "Occupational Classification",
 --
 -- need to get the average FTE status for the three month reporting period
@@ -277,13 +304,19 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
               then 'Faculty'  
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
            and ntrpcls_pgrp_code = 05
-              then 'Faculty'                           
+              then 'Faculty'   
+         when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BB' 
+           and ntrpcls_pgrp_code = 99
+              then 'Faculty'                                      
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = '32' 
            and ntrpcls_pgrp_code in (09, 10, 11, 12, 14) 
               then 'Research Support' 
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'A3' 
            and ntrpcls_pgrp_code = 11
               then 'Research Support'  
+         when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
+           and ntrpcls_pgrp_code = 16
+              then 'Research Support'               
          when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = '3A' 
            and ntrpcls_pgrp_code = 12
               then 'Research Support'                  
@@ -302,6 +335,12 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = '4Z' 
            and ntrpcls_pgrp_code = 10
               then 'Research Support' 
+         when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'CA' 
+           and ntrpcls_pgrp_code = 14
+              then 'Research Support'   
+         when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'CC' 
+           and ntrpcls_pgrp_code = 99
+              then 'Research Support'                          
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
            and ntrpcls_pgrp_code in (09, 10, 11, 12, 14) 
               then 'Research Support'   
@@ -331,8 +370,11 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
           when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'AC' 
            and ntrpcls_pgrp_code = 11
               then 'Research Support' 
+         when substr(nbrjobs_ecls_code, 1,2) = 'SA' and ntrpcls_ecls_code = 'SA' 
+           and ntrpcls_pgrp_code = 99
+              then 'Research Support'               
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = '32' 
-           and ntrpcls_pgrp_code in (05, 13, 15) 
+           and ntrpcls_pgrp_code in (05, 13) 
               then 'Technician/Staff Scientist'  
          when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = 'BA' 
            and ntrpcls_pgrp_code in (13, 15) 
@@ -354,8 +396,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when nbrjobs_ecls_code in ('PA', 'PB')   
               then 'Research Analyst/Coordinator' 
          when nbrjobs_ecls_code = 'RA'   
-              then 'Post Graduate Researcher'  
-         else nbrjobs_ecls_code||' '||ntrpcls_ecls_code||' '||ntrpcls_pgrp_code 
+              then 'Post Graduate Researcher'
+         when substr(nbrjobs_ecls_code, 1,1) = 'B' and ntrpcls_ecls_code = '32' 
+           and ntrpcls_pgrp_code = 15 
+              then 'Clinicians'  
+         when substr(nbrjobs_ecls_code, 1,1) = 'C' and ntrpcls_ecls_code = 'CG' 
+           and ntrpcls_pgrp_code = 15 
+              then 'Clinicians'                          
+         when substr(nbrjobs_ecls_code, 1,2) = 'SA' and ntrpcls_ecls_code = '90' 
+           and ntrpcls_pgrp_code = 99
+              then 'Undergraduate Student'                            
+-- the following line of code is used to research items that default because they don't match any of the 
+-- above criteria                
+--         else spriden_pidm||' '||nbrjobs_ecls_code||' '||ntrpcls_ecls_code||' '||ntrpcls_pgrp_code
+         else 'Research Support'  
         END,
          ptrcaln_pict_code    
          ;
