@@ -4,6 +4,8 @@
 """
 Generate STAR METRICS reports for a given fiscal quarter.
 
+Must be run in the same directory as the STAR METRICS SQL scripts.
+
 Written for the University of Illinois.
 """
 
