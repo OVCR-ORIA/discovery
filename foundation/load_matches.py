@@ -15,9 +15,34 @@ __version__ = 1.0
 import sys
 sys.path.append('../lib')
 
+import argparse
 import csv
 import oria
 from master import *
+
+def str2auto_bool(arg):
+    """
+    Converts a string to a boolean value.
+
+    Args:
+        arg: The string to convert
+
+    Returns:
+        bool or None: The boolean value corresponding to the string, or
+                      None if 'auto'
+
+    Raises:
+        ValueError: if specified string is not valid
+    """
+    state = arg.lower()
+    if state in ("true", "yes", "1"):
+        return True
+    elif state in ("false", "no", "0"):
+        return False
+    elif state in ("auto"):
+        return None
+    else:
+        raise ValueError(arg)
 
 def main():
     """
@@ -26,7 +51,16 @@ def main():
     """
     # Parse user options.
     parser = oria.ArgumentParser(
-        description="load entity matches into oria master DB"
+        description="load entity matches into oria master DB",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.register('type', 'auto_bool', str2auto_bool)
+    parser.add_argument(
+        "--header",
+        type="auto_bool",
+        metavar="true|yes|false|no|auto",
+        default="auto",
+        help="Specifies whether the CSV contains a header"
     )
     parser.add_argument(
         "--scheme",
@@ -84,16 +118,20 @@ def main():
     if args.debug:
         print "*** Using data source: %s (id: %s)" % (args.source, source_id)
 
-    # Detect whether a header is present in the CSV
-    has_header = csv.Sniffer().has_header(args.infile.read(1024))
-    args.infile.seek(0)
+    if args.header is not None:
+        has_header = args.header
+    else:
+        # Detect whether a header is present in the CSV
+        has_header = csv.Sniffer().has_header(args.infile.read(1024))
+        if args.debug and has_header: print "*** Detected CSV header..."
+        args.infile.seek(0)
 
     # Open input CSV
     csv_reader = csv.reader(args.infile)
 
     # Skip header if it exists
     if has_header:
-        if args.debug: print "*** Detected CSV header, skipping..."
+        if args.debug: print "*** Skipping CSV header..."
         next(csv_reader)
 
     total = 0
@@ -105,13 +143,20 @@ def main():
             print "WARN: Skipping invalid row: %s" % row
             continue
 
-        other_id = str(row[0])     # other id
-        meo_id = str(row[1])       # id from master_external_org
+        other_id    = str(row[0])   # other id
+        meo_id      = str(row[1])   # id from master_external_org
+        other_name  = str(row[2])   # other name
+        meo_name    = str(row[3])   # name from master_external_org
 
         try:
             # Assert a match between the entities with the given ids
             add_external_org_other_id(
                 db, meo_id, other_id, scheme_id, source_id, args.comment
+            )
+
+            # Add the other_name as an alias for the organization in our master
+            add_external_org_alias(
+                db, meo_id, other_name, source_id, comment=args.comment
             )
         except Exception as e:
             print ("ERR: Could not assert match: other(%s) -> org(%s)!\n" + \
