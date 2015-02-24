@@ -79,7 +79,7 @@ def main():
         help="Specifies a comment to be associated with the matched entities."
     )
     parser.add_argument(
-        "infile",
+        "csvfile",
         type=open,
         help="CSV file to read"
     )
@@ -122,12 +122,12 @@ def main():
         has_header = args.header
     else:
         # Detect whether a header is present in the CSV
-        has_header = csv.Sniffer().has_header(args.infile.read(1024))
+        has_header = csv.Sniffer().has_header(args.csvfile.read(1024))
         if args.debug and has_header: print "*** Detected CSV header..."
-        args.infile.seek(0)
+        args.csvfile.seek(0)
 
     # Open input CSV
-    csv_reader = csv.reader(args.infile)
+    csv_reader = csv.reader(args.csvfile)
 
     # Skip header if it exists
     if has_header:
