@@ -803,5 +803,5 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num,
                 then 'F'||f.spraddr_zip             
            else 'Z00000-0000' 
          END, 
-         d.fgbtrnd_trans_amt 
- 
+         d.fgbtrnd_trans_amt;
+
