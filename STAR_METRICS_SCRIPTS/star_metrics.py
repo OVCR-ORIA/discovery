@@ -4,8 +4,6 @@
 """
 Generate STAR METRICS reports for a given fiscal quarter.
 
-Must be run in the same directory as the STAR METRICS SQL scripts.
-
 Written for the University of Illinois.
 """
 
@@ -16,12 +14,10 @@ __version__ = 1.4
 # Adjust the load path for common data loading operations.
 import sys
 from os import path
-sys.path.append(
-    path.join(
-        path.dirname( path.dirname( path.abspath( __file__ ) ) ),
-        'lib'
-        )
-    )
+
+CWD = path.dirname( path.abspath( __file__ ) )
+LIB_PATH = path.join( path.dirname( CWD ), 'lib' )
+sys.path.append( LIB_PATH )
 
 # Common data loading tools.
 import oria
@@ -30,7 +26,8 @@ import argparse
 import csv
 from datetime import date, timedelta
 from getpass import getpass
-from os import makedirs, remove
+import logging
+from os import devnull, makedirs, remove
 import re
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile
@@ -40,9 +37,7 @@ from time import localtime
 COAS = 1 # chart of accounts — Urbana campus only
 SERVER = "reportprod.admin.uillinois.edu"
 SERVICE = "REPTPROD"
-#SQLPLUS = path.join( path.dirname( path.abspath( __file__ ) ),
-#                     "sqlplus.sh" ) # SQL*Plus command
-SQLPLUS = "/content/discovery/lib/sqlplus.sh"
+SQLPLUS = LIB_PATH + "/sqlplus.sh"
 
 # Date validation constants.
 FIRST_FY = 1867 # oldest fiscal year allowed
@@ -206,13 +201,27 @@ def main():
                          help="quarter for which to generate " +
                              "results" )
     parser.add_argument( "--vendor-floor", "--vf", type=int,
-                         default="25000",
-                         help="dollar floor for vendor " +
+                         default="24999",
+                         help="dollar floor for vendor/subaward " +
                              "transaction inclusion" )
     parser.add_argument( "--outdir", "-o", type=str, default=".",
                          help="directory in which to place output " +
                              "files" )
+    parser.add_argument( "--logfile", "-l", default=devnull,
+                         type=argparse.FileType('w'),
+                         help="log file (default none)" )
+    parser.add_argument( "--debug", "-d", action="store_true",
+                         help="don’t delete temp SQL file" )
     args = parser.parse_args()
+
+    # Start logging.
+    logfile = args.logfile
+    logging.basicConfig(
+        stream=logfile,
+        level=logging.INFO,
+        format="%(asctime)s:%(levelname)s:%(message)s"
+    )
+    logging.info( "Beginning STAR METRICS report." )
 
     # Make sure the output directory exists and is writable.
     outdir = path.abspath( args.outdir )
@@ -277,34 +286,45 @@ def main():
     else:
         end_cal_year = start_cal_year
     end_date = date( end_cal_year, end_mon, 1 ) - timedelta( 1 )
-    end_date_str = str( end_date ).replace( "-", "_" )
+    end_date_str = str( end_date ).replace( "-", "_" ) # for filename
+
+    # Normalize strings for SQL consumption.
+    beg_date_sql = start_date.strftime( "%d-%b-%Y" ).upper()
+    end_date_sql = end_date.strftime( "%d-%b-%Y" ).upper()
+    fy_sql = "%02d" % ( fy % 100 )
+    periods = [ "%02d" % (((quarter-1)*3) + i + 1 ) for i in range(3) ]
 
     # Generate a PL/SQL file with the given parameters.
+    logging.info( "Generating SQL master file..." )
+    logging.info( "  beg_date: %s" % beg_date_sql )
+    logging.info( "  coas: %d" % COAS )
+    logging.info( "  end_date: %s" % end_date_sql )
+    logging.info( "  fsyr: %s" % fy_sql )
+    logging.info( "  lowerlimit: %d" % args.vendor_floor )
+    logging.info( "  periods: %s" % ", ".join( periods ) )
+
     wfile = NamedTemporaryFile( dir=".", delete=False, suffix=".sql" )
-    wfile.write( "DEFINE beg_date = '%s';\n" %
-                 start_date.strftime( "%d-%b-%Y" ).upper() )
+    wfile.write( "DEFINE beg_date = '%s';\n" % beg_date_sql )
     wfile.write( "DEFINE coas = '%d';\n" % COAS )
-    wfile.write( "DEFINE end_date = '%s';\n" %
-                 end_date.strftime( "%d-%b-%Y" ).upper() )
-    wfile.write( "DEFINE fsyr = '%02d';\n" % ( fy % 100 ) )
+    wfile.write( "DEFINE end_date = '%s';\n" % end_date_sql )
+    wfile.write( "DEFINE fsyr = '%s';\n" % fy_sql )
     wfile.write( "DEFINE lowerlimit = %d;\n" % args.vendor_floor )
     for i in range(3):
-        wfile.write( "DEFINE period%d = '%02d';\n" %
-                     ( i+1, ((quarter-1)*3) + i + 1 ) )
+        wfile.write( "DEFINE period%d = '%s';\n" %
+                     ( i+1, periods[i] ) )
     wfile.write( """SET FEEDBACK OFF;
 SET HEADING OFF;
 SET LINESIZE 1000;
 SET PAGESIZE 0;
 SET TRIMSPOOL ON;
-@star_metrics_award.sql
-@star_metrics_subaward.sql
-@star_metrics_vendor.sql
-@star_metrics_employee_anon.sql
 """ )
+    wfile.write( "@" + CWD + "/star_metrics_award.sql\n" )
+    wfile.write( "@" + CWD + "/star_metrics_subaward.sql\n" )
+    wfile.write( "@" + CWD + "/star_metrics_vendor.sql\n" )
+    wfile.write( "@" + CWD + "/star_metrics_employee_anon.sql\n" )
     wfile.close()
 
     # Run sqlplus on the file.  Capture the output.
-    # @@@ TODO: can we get the SQL*Plus process to read from STDIN?
     rfile = open( wfile.name, "r" )
     sqlplus = Popen( "%s %s/%s@%s/%s" %
                      ( SQLPLUS, args.user, pwd, SERVER, SERVICE ),
@@ -324,11 +344,23 @@ SET TRIMSPOOL ON;
         # directory in four pieces, in CSV format, with appropriate
         # headers.
 
+        # Look for errors above all else.  The error message comes out
+        # on the line after ERROR:, so report that line.
+        if errors:
+            logging.error( line )
+            raise StarMetricsAuthenticationError, "\n" + line
+
+        if line.startswith( "ERROR:" ):
+            logging.error( line )
+            errors = True
+            continue
+
         # If we are writing to a file and get a SQL prompt, the output
         # is done.
         if outfile:
             if line.startswith( "SQL>" ):
                 writer = None
+                logging.info( "Closing output file." )
                 outfile.close()
                 outfile = None
                 report_idx += 1
@@ -341,6 +373,8 @@ SET TRIMSPOOL ON;
         # about to begin.
         if outfile is None and not in_vars and \
                 var_sub_re.match( line ):
+            logging.info( "Variable substitution for next output " + \
+                          "file has begun." )
             in_vars = True
             continue
 
@@ -349,28 +383,22 @@ SET TRIMSPOOL ON;
         if in_vars and not( var_sub_re.match( line ) ):
             in_vars = False
             report = REPORTS[ report_idx ]
-            outfile = open( path.join( outdir,
-                                       "%s_%s_%s.csv" %
-                                           ( UNIV_ABBR,
-                                             report.capitalize(),
-                                             end_date_str ) ),
-                            "w" )
+            outfn = "%s_%s_%s.csv" % ( UNIV_ABBR,
+                                       report.capitalize(),
+                                       end_date_str )
+            logging.info( "Opening output file %s" % outfn )
+            outfile = open( path.join( outdir, outfn ), "w" )
             writer = csv.writer( outfile )
             writer.writerow( HEADERS[ report ] )
             write_csv_line( line, writer, report )
             continue
 
-        # Otherwise, look for connection errors.  The error message
-        # comes out on the line after ERROR:, so report that line.
-        if errors:
-            raise StarMetricsAuthenticationError, "\n" + line
-
-        if line.startswith( "ERROR:" ):
-            errors = True
-
     # Remove the generated file.
     rfile.close()
-    remove( wfile.name )
+    if not args.debug:
+        remove( wfile.name )
+
+    logging.info( "Finishing STAR METRICS reports." )
 
     return
 
