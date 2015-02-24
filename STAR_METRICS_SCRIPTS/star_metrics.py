@@ -8,8 +8,8 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"5 February 2015"
-__version__ = 1.3
+__date__ = u"24 February 2015"
+__version__ = 1.4
 
 # Adjust the load path for common data loading operations.
 import sys
@@ -285,7 +285,7 @@ def main():
     wfile.write( "DEFINE end_date = '%s';\n" %
                  end_date.strftime( "%d-%b-%Y" ).upper() )
     wfile.write( "DEFINE fsyr = '%02d';\n" % ( fy % 100 ) )
-    wfile.write( "DEFINE amt_floor = %d;\n" % args.vendor_floor )
+    wfile.write( "DEFINE lowerlimit = %d;\n" % args.vendor_floor )
     for i in range(3):
         wfile.write( "DEFINE period%d = '%02d';\n" %
                      ( i+1, ((quarter-1)*3) + i + 1 ) )
@@ -296,7 +296,7 @@ SET PAGESIZE 0;
 SET TRIMSPOOL ON;
 @star_metrics_award.sql
 @star_metrics_subaward.sql
-@star_metrics_vendor_param.sql
+@star_metrics_vendor.sql
 @star_metrics_employee_anon.sql
 """ )
     wfile.close()

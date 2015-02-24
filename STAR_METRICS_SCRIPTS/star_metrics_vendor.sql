@@ -7,11 +7,11 @@
 --     period2  - second period
 --     period3  - third period
 --     coas     - chart
---US vendor, sponsor id is not null and cfda internal id no not null
+--     lowerlimit - minimum amount for extracting data
+--vendor, sponsor id is not null and cfda internal id no not null
 --type is 4A, 4C, 4E, 4G, 4Y
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",       
- --        b.frvcfda_cfda_code||' '||nvl(a.frbgrnt_sponsor_id, 0) UniqueAwardNumber,
           CASE           
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
@@ -23,9 +23,21 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          END as "UniqueAwardNumber", 
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000'            
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt VendorPaymentAmount 
 from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -63,10 +75,8 @@ from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
        OR o.spraddr_from_date < n.fabinvh_pmt_due_date)
      AND (o.spraddr_to_date is null
        OR o.spraddr_to_date > n.fabinvh_pmt_due_date)   
- --    and (o.spraddr_natn_code is null
- --       or o.spraddr_natn_code = 'US')
       group by m.fgbtrnd_doc_code
-      having sum(m.fgbtrnd_trans_amt) > 24999.99   ) Docs
+      having sum(m.fgbtrnd_trans_amt) > &&lowerlimit   ) Docs
   where a.frbgrnt_coas_code = '&&coas'
     and a.frbgrnt_sponsor_id is not null
     and a.frbgrnt_cfda_internal_id_no is not null
@@ -99,11 +109,8 @@ from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
        OR f.spraddr_from_date < e.fabinvh_pmt_due_date)
      AND (f.spraddr_to_date is null
        OR f.spraddr_to_date > e.fabinvh_pmt_due_date)   
---     and (f.spraddr_natn_code is null
---        or f.spraddr_natn_code = 'US')
      and d.fgbtrnd_doc_code = Docs.doccd                            
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
---      b.frvcfda_cfda_code||' '||nvl(a.frbgrnt_sponsor_id, 0), 
       CASE           
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
@@ -114,13 +121,25 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
          else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0) 
       END,
       CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
        END,           
       d.fgbtrnd_trans_amt 
 union all
---US vendor, sponsor id is not null, cfda internal id is null
+--vendor, sponsor id is not null, cfda internal id is null
 --type is 4A, 4Y, 4C, 4E, 4G
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",  
@@ -132,9 +151,21 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          END as  "UniqueAwardNumber,",          
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000'  
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt "VendorPaymentAmount" 
 from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -170,11 +201,9 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (o.spraddr_from_date is null
        OR o.spraddr_from_date < n.fabinvh_pmt_due_date)
      AND (o.spraddr_to_date is null
-       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)   
---     and (o.spraddr_natn_code is null
---        or o.spraddr_natn_code = 'US')      
+       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)         
       group by m.fgbtrnd_doc_code
-      having sum(m.fgbtrnd_trans_amt) > 24999.99   ) Docs
+      having sum(m.fgbtrnd_trans_amt) > &&lowerlimit   ) Docs
   where a.frbgrnt_coas_code = '&&coas'
     and a.frbgrnt_sponsor_id is not null
     and a.frbgrnt_cfda_internal_id_no is null
@@ -205,9 +234,7 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (f.spraddr_from_date is null
        OR f.spraddr_from_date < e.fabinvh_pmt_due_date)
      AND (f.spraddr_to_date is null
-       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)   
---     and (f.spraddr_natn_code is null
---        or f.spraddr_natn_code = 'US')  
+       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)    
      and d.fgbtrnd_doc_code = Docs.doccd                                      
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
         CASE 
@@ -217,17 +244,28 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
            else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0) 
        END, 
        CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
        END,            
       d.fgbtrnd_trans_amt        
 union all
---US vendor, sponsor id is null, cfda internal id no is not null
+--vendor, sponsor id is null, cfda internal id no is not null
 --type is 4A, 4C, 4E, 4G, 4Y
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",       
---         b.frvcfda_cfda_code||' '||a.frbgrnt_title UniqueAwardNumber,
          CASE           
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
@@ -239,9 +277,21 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          END as "UniqueAwardNumber",    
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000'  
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt VendorPaymentAmount 
 from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -279,10 +329,8 @@ from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
        OR o.spraddr_from_date < n.fabinvh_pmt_due_date)
      AND (o.spraddr_to_date is null
        OR o.spraddr_to_date > n.fabinvh_pmt_due_date)   
---     and (o.spraddr_natn_code is null
---        or o.spraddr_natn_code = 'US') 
       group by m.fgbtrnd_doc_code
-      having sum(m.fgbtrnd_trans_amt) > 24999.99   ) Docs                
+      having sum(m.fgbtrnd_trans_amt) > &&lowerlimit   ) Docs              
   where a.frbgrnt_coas_code = '&&coas'
     and a.frbgrnt_sponsor_id is null
     and a.frbgrnt_cfda_internal_id_no is not null
@@ -315,11 +363,8 @@ from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
        OR f.spraddr_from_date < e.fabinvh_pmt_due_date)
      AND (f.spraddr_to_date is null
        OR f.spraddr_to_date > e.fabinvh_pmt_due_date)   
---     and (f.spraddr_natn_code is null
---        or f.spraddr_natn_code = 'US')  
      and d.fgbtrnd_doc_code = Docs.doccd                                  
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
---      b.frvcfda_cfda_code||' '||a.frbgrnt_title, 
        CASE           
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
@@ -330,13 +375,25 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
          else frvcfda_cfda_code||' '||a.frbgrnt_title  
        END, 
        CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
        END,           
       d.fgbtrnd_trans_amt 
 union all
---US vendor, sponsor id is null, cfda internal id no is null
+--vendor, sponsor id is null, cfda internal id no is null
 --type is 4A, 4C, 4E, 4G, 4Y
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate", 
@@ -348,9 +405,21 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          END as  "UniqueAwardNumber,",               
          a.frbgrnt_code "RecipientAccountNumber",
          CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt "VendorPaymentAmount" 
 from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -386,11 +455,9 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (o.spraddr_from_date is null
        OR o.spraddr_from_date < n.fabinvh_pmt_due_date)
      AND (o.spraddr_to_date is null
-       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)   
---     and (o.spraddr_natn_code is null
---        or o.spraddr_natn_code = 'US')            
+       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)              
       group by m.fgbtrnd_doc_code
-      having sum(m.fgbtrnd_trans_amt) > 24999.99   ) Docs               
+      having sum(m.fgbtrnd_trans_amt) > &&lowerlimit   ) Docs          
   where a.frbgrnt_coas_code = '&&coas'
     and a.frbgrnt_sponsor_id is null
     and a.frbgrnt_cfda_internal_id_no is null
@@ -421,9 +488,7 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (f.spraddr_from_date is null
        OR f.spraddr_from_date < e.fabinvh_pmt_due_date)
      AND (f.spraddr_to_date is null
-       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)   
---     and (f.spraddr_natn_code is null
---        or f.spraddr_natn_code = 'US')   
+       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)      
      and d.fgbtrnd_doc_code = Docs.doccd                                   
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
        CASE 
@@ -433,17 +498,28 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
            else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0) 
        END, 
        CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
        END,            
       d.fgbtrnd_trans_amt
 union all
---US vendor, sponsor id is null, cfda internal id no is not null
+--vendor, sponsor id is null, cfda internal id no is not null
 --type is 4A, 4C, 4E, 4G, 4Y
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",      
---         b.frvcfda_cfda_code||' '||a.frbgrnt_title UniqueAwardNumber,
          CASE           
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
@@ -455,9 +531,21 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          END as "UniqueAwardNumber",  
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt VendorPaymentAmount 
 from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -494,11 +582,9 @@ from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (o.spraddr_from_date is null
        OR o.spraddr_from_date < n.fabinvh_pmt_due_date)
      AND (o.spraddr_to_date is null
-       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)   
---     and (o.spraddr_natn_code is null
---        or o.spraddr_natn_code = 'US')    
+       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)      
       group by m.fgbtrnd_doc_code
-      having sum(m.fgbtrnd_trans_amt) > 24999.99   ) Docs
+      having sum(m.fgbtrnd_trans_amt) > &&lowerlimit   ) Docs
   where a.frbgrnt_coas_code = '&&coas'
     and a.frbgrnt_sponsor_id is null
     and a.frbgrnt_cfda_internal_id_no is not null
@@ -530,12 +616,9 @@ from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (f.spraddr_from_date is null
        OR f.spraddr_from_date < e.fabinvh_pmt_due_date)
      AND (f.spraddr_to_date is null
-       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)   
---     and (f.spraddr_natn_code is null
---        or f.spraddr_natn_code = 'US')   
+       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)    
      and d.fgbtrnd_doc_code = Docs.doccd                                    
-group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
---      b.frvcfda_cfda_code||' '||a.frbgrnt_title, 
+group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,   
        CASE           
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
@@ -546,13 +629,25 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
          else frvcfda_cfda_code||' '||a.frbgrnt_title  
        END, 
        CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
        END,           
       d.fgbtrnd_trans_amt
 union all
---US vendor, sponsor id is null and cfda_internal_id_no is null
+--vendor, sponsor id is null and cfda_internal_id_no is null
 --type is 4A, 4C, 4E, 4G, 4Y
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",       
@@ -564,9 +659,21 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          END as  "UniqueAwardNumber,",  
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000' 
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt VendorPaymentAmount 
 from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -602,11 +709,9 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (o.spraddr_from_date is null
        OR o.spraddr_from_date < n.fabinvh_pmt_due_date)
      AND (o.spraddr_to_date is null
-       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)   
---     and (o.spraddr_natn_code is null
---        or o.spraddr_natn_code = 'US')      
+       OR o.spraddr_to_date > n.fabinvh_pmt_due_date)       
       group by m.fgbtrnd_doc_code
-      having sum(m.fgbtrnd_trans_amt) > 24999.99   ) Docs
+      having sum(m.fgbtrnd_trans_amt) > &&lowerlimit   ) Docs
   where a.frbgrnt_coas_code = '&&coas'
     and a.frbgrnt_sponsor_id is null
     and a.frbgrnt_cfda_internal_id_no is null
@@ -637,9 +742,7 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      AND (f.spraddr_from_date is null
        OR f.spraddr_from_date < e.fabinvh_pmt_due_date)
      AND (f.spraddr_to_date is null
-       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)   
---     and (f.spraddr_natn_code is null
---        or f.spraddr_natn_code = 'US')    
+       OR f.spraddr_to_date > e.fabinvh_pmt_due_date)      
      and d.fgbtrnd_doc_code = Docs.doccd                                    
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
       CASE 
@@ -649,8 +752,21 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
            else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0) 
       END, 
        CASE 
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
+                then 'Z00000-0000'  
+           when f.spraddr_zip is null and f.spraddr_natn_code is not null
+            and f.spraddr_natn_code != 'US'
+                then 'F000000000'                                       
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
-           else 'F'||f.spraddr_zip 
+           when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+              and length(f.spraddr_zip) > 9
+               then 'F000000000'               
+           when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
+                then 'F'||f.spraddr_zip             
+           else 'Z00000-0000'   
        END,           
-      d.fgbtrnd_trans_amt;
+      d.fgbtrnd_trans_amt
+
