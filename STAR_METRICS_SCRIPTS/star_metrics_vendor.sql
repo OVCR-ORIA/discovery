@@ -24,12 +24,17 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -122,12 +127,17 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
       END,
       CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -135,7 +145,7 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'  
        END,           
       d.fgbtrnd_trans_amt 
 union all
@@ -152,12 +162,17 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -245,12 +260,17 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
        END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -258,7 +278,7 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'  
        END,            
       d.fgbtrnd_trans_amt        
 union all
@@ -278,12 +298,17 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -291,7 +316,7 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000'  
+           else 'Z00000-0000'   
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt VendorPaymentAmount 
 from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -376,12 +401,17 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
        END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -389,7 +419,7 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'   
        END,           
       d.fgbtrnd_trans_amt 
 union all
@@ -406,12 +436,17 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          a.frbgrnt_code "RecipientAccountNumber",
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -419,7 +454,7 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'  
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt "VendorPaymentAmount" 
 from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -499,12 +534,17 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
        END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -512,7 +552,7 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'  
        END,            
       d.fgbtrnd_trans_amt
 union all
@@ -532,12 +572,17 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -545,7 +590,7 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'  
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt VendorPaymentAmount 
 from frbgrnt a, frvcfda b, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -630,12 +675,17 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
        END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -643,7 +693,7 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'  
        END,           
       d.fgbtrnd_trans_amt
 union all
@@ -660,12 +710,17 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -673,7 +728,7 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000' 
+           else 'Z00000-0000'  
          END as "VendorDunsNumber",        
          d.fgbtrnd_trans_amt VendorPaymentAmount 
 from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
@@ -753,12 +808,17 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
       END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
+            and f.spraddr_stat_code = 'BC'
+                then 'F000000000'           
+           when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code = 'US'
                 then 'Z00000-0000'  
            when f.spraddr_zip is null and f.spraddr_natn_code is not null
             and f.spraddr_natn_code != 'US'
-                then 'F000000000'                                       
+                then 'F000000000'  
+           when f.spraddr_natn_code is null and f.spraddr_stat_code = 'BC'
+                then 'F'||f.spraddr_zip                                                     
            when f.spraddr_natn_code is null then 'Z'||f.spraddr_zip
            when f.spraddr_natn_code = 'US' then 'Z'||f.spraddr_zip 
            when  f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
@@ -766,7 +826,7 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
                then 'F000000000'               
            when f.spraddr_natn_code is not null and f.spraddr_natn_code != 'US'
                 then 'F'||f.spraddr_zip             
-           else 'Z00000-0000'   
+           else 'Z00000-0000'  
        END,           
       d.fgbtrnd_trans_amt;
 
