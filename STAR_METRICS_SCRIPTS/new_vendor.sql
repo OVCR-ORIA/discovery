@@ -6,18 +6,18 @@ DEFINE period2 = '08';
 DEFINE period3 = '09';
 DEFINE coas = '1';
 DEFINE lowerlimit=24999;
-SELECT
-  CASE
-    WHEN SUBSTR(FRVCFDA_CFDA_CODE, 4, 3) = '000'
-      THEN '00.070 Federal - Other'
-    WHEN SUBSTR(FRVCFDA_CFDA_CODE, 1, 2) = '99'
-      THEN '00.070 Federal - Other'
-    WHEN FRVCFDA_CFDA_CODE = '93.848'
-      THEN '93.847 ' -- || NVL(FRBGRNT_SPONSOR_ID, 0)
-    ELSE FRVCFDA_CFDA_CODE -- || ' ' || NVL(FRBGRNT_SPONSOR_ID, 0)
-  END
-FROM FRBGRNT
-WHERE ROWNUM <= 5;
+-- SELECT
+--   CASE
+--     WHEN SUBSTR(FRVCFDA_CFDA_CODE, 4, 3) = '000'
+--       THEN '00.070 Federal - Other'
+--     WHEN SUBSTR(FRVCFDA_CFDA_CODE, 1, 2) = '99'
+--       THEN '00.070 Federal - Other'
+--     WHEN FRVCFDA_CFDA_CODE = '93.848'
+--       THEN '93.847 ' -- || NVL(FRBGRNT_SPONSOR_ID, 0)
+--     ELSE FRVCFDA_CFDA_CODE -- || ' ' || NVL(FRBGRNT_SPONSOR_ID, 0)
+--   END
+-- FROM FRBGRNT
+-- WHERE ROWNUM <= 5;
 
 -- This is just “Docs” for the first subclause of M.N.’s full vendor
 -- query.
