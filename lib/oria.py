@@ -21,6 +21,7 @@ from MySQLdb import connect
 # DB access constants
 DB_BASE = "oria_master"
 DB_HOST = "localhost"
+DB_PORT = 3306
 DB_PASS = "justdroning"
 DB_USER = "loader_bot"
 
@@ -68,7 +69,7 @@ class DBConnection( object ):
     Broker connections to the ORIA database, including faking it
     depending on test or offline status.
     """
-    def __init__( self, host=DB_HOST, user=DB_USER, passwd=DB_PASS,
+    def __init__( self, host=DB_HOST, port=DB_PORT, user=DB_USER, passwd=DB_PASS,
                   db=DB_BASE, offline=False, db_write=True,
                   debug=False ):
         """
@@ -84,9 +85,9 @@ class DBConnection( object ):
         self._debug = debug
 
         if not self.offline:
-            self._db = connect( host=DB_HOST, user=DB_USER,
-                                passwd=DB_PASS, db=DB_BASE )
-
+            self._db = connect( host=host, port=port,
+                                user=user, passwd=passwd,
+                                db=db )
         return
 
     def fetch_id( self, table_name, column_name, column_value,
