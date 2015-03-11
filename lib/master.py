@@ -43,6 +43,11 @@ class SchemeNonExistent(Exception):
     """
     pass
 
+class RelationshipNonExistent(Exception):
+    """
+    Raised when an unknown relationship is specified.
+    """
+
 def _write_with_integrity( db, stmt, params ):
     """
     Generic function for writing an insert statement with foreign key
@@ -797,3 +802,70 @@ def rename_external_org( db, org_id, new_name, source_id,
                                 lang=old_name_lang, comment=comment )
 
     return
+
+def get_master_id_for_other_id(db, other_id, scheme_id):
+    """
+    Get the master external_org ID for a given other_id and scheme_id.
+
+    Args:
+        db: The db instance
+        other_id: The other id
+        scheme_id: The scheme id
+
+    Returns:
+        str: The master external_org ID or None if none found
+    """
+    db.start()
+    find_stmt = "SELECT master_id FROM master_external_org_other_id " + \
+                "WHERE other_id = %s AND scheme = %s;"
+    result = db.read(find_stmt, (other_id, scheme_id, ))
+    db.finish()
+
+    if result is not None:
+        result = result[0]
+
+    return result
+
+def get_relationship_type_id(db, relationship):
+    """
+    Get the relationship identifier for a given relationship name.
+
+    Args:
+        db: The db instance
+        relationship: The relationship name
+
+    Returns:
+        str: The relationship id for the given relationship name
+
+    Raises:
+        RelationshipNonExistent: If an unknown relationship is specified
+    """
+    db.start()
+    find_stmt = "SELECT id FROM master_org_relationship_type " + \
+                "WHERE name = %s;"
+    result = db.read(find_stmt, (relationship, ))
+    db.finish()
+
+    if result is None:
+        raise RelationshipNonExistent("Unknown relationship: %s" % relationship)
+
+    relationship_id = result[0]
+    return relationship_id
+
+def get_supported_relationship_types(db):
+    """
+    Get the list of supported relationship types.
+
+    Args:
+        db: The db instance
+
+    Returns:
+        list of str: The supported relationship types
+    """
+    db.start()
+    find_stmt = "SELECT name FROM master_org_relationship_type;"
+    results = db.read_many(find_stmt, ())
+    db.finish()
+
+    relationship_types = [result[0] for result in results]
+    return relationship_types
