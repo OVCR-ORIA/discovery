@@ -152,18 +152,50 @@ def add_external_org_relationship( db, org_1_id, org_2_id,
 
     return
 
-def del_external_org():
+def del_external_org( db, org_id, source_id, comment=None ):
     """
     Delete (i.e., mark as no longer valid) an external organization
     and all of its properties.
-    """
-    # delete other id
-    # delete postcode
-    # delete relationships
-    # delete aliases
-    # delete the org
 
-    raise NotImplementedError
+    Will silently succeed if the organization is already marked as
+    expired, but will raise an exception if the organization does not
+    exist.
+    """
+    db.start()
+    find_stmt = "SELECT id FROM master_external_org WHERE id = %s;"
+    org_row = db.read( find_stmt, ( org_id, ) )
+    db.finish()
+
+    if org_row is None:
+        # We didn’t find anything to expire.
+        return
+
+    # Delete the organization’s properties.  These will silently
+    # succeed if already expired.  We run the risk of doing a little
+    # extra work if the organization was already deleted, but this
+    # will clean up anything inadvertently added.
+    del_external_org_other_id( db, org_id, "*", None, source_id,
+                               comment )
+    del_external_org_postcode( db, org_id, "*", source_id, comment )
+    del_external_org_relationship( db, org_id, "*", None, source_id,
+                                   comment )
+    del_external_org_alias( db, org_id, "*", source_id,
+                            comment=comment )
+
+    # Delete the org itself.
+    update_stmt = "UPDATE master_external_org " + \
+                  "SET valid_end = NOW(), source = %s"
+    params = ( source_id, )
+
+    if comment is not None:
+        update_stmt += ", source_comment = %s"
+        params += ( comment, )
+
+    update_stmt += " WHERE id = %s AND valid_end IS NOT NULL;"
+    params += ( org_id, )
+    _write_with_integrity( db, update_stmt, ( params ) )
+
+    return
 
 def del_external_org_alias( db, org_id, alias, source_id, lang='en',
                             comment=None ):
@@ -172,14 +204,21 @@ def del_external_org_alias( db, org_id, alias, source_id, lang='en',
     organization.  The org and and source are identifed by ID; the
     language is any valid ISO/IANA token (English by default).
 
+    Supports a wildcard '*' on alias to expire all aliases of the
+    given org_id.
+
     Will silently succeed if the alias is not asserted, or already
     marked as expired.
     """
     db.start()
     find_stmt = "SELECT * FROM master_external_org_alias " + \
-                "WHERE external_org = %s AND alias = %s " + \
-                "AND lang = %s AND valid_end IS NULL;"
-    alias_row = db.read( find_stmt, ( org_id, alias, lang ) )
+                "WHERE external_org = %s AND valid_end IS NULL"
+    params = ( org_id, )
+    if alias != "*":
+        find_stmt += " AND alias = %s AND lang = %s"
+        params += ( alias, lang )
+    find_stmt += ";"
+    alias_row = db.read( find_stmt, ( params ) )
     db.finish()
 
     if alias_row is None:
@@ -195,9 +234,12 @@ def del_external_org_alias( db, org_id, alias, source_id, lang='en',
         update_stmt += ", source_comment = %s"
         params += ( comment, )
 
-    update_stmt += " WHERE external_org = %s AND alias = %s " + \
-                   "AND lang = %s AND valid_end IS NULL;"
-    params += ( org_id, alias, lang )
+    update_stmt += " WHERE external_org = %s AND valid_end IS NULL"
+    params += ( org_id, )
+    if alias != "*":
+        update_stmt += " AND alias = %s AND lang = %s"
+        params += ( alias, lang )
+    update_stmt += ";"
     _write_with_integrity( db, update_stmt, ( params ) )
 
     return
@@ -219,7 +261,7 @@ def del_external_org_other_id( db, org_id, other_id, scheme_id,
     find_stmt = "SELECT * FROM master_external_org_other_id " + \
                 "WHERE master_id = %s AND valid_end IS NULL"
     params = ( org_id, )
-    if other_id != '*':
+    if other_id != "*":
         find_stmt += " AND other_id = %s AND scheme = %s"
         params += ( other_id, scheme_id )
     find_stmt += ";"
@@ -241,7 +283,7 @@ def del_external_org_other_id( db, org_id, other_id, scheme_id,
 
     update_stmt += " WHERE master_id = %s AND valid_end IS NULL"
     params += ( org_id, )
-    if other_id != '*':
+    if other_id != "*":
         update_stmt += " AND other_id = %s AND scheme = %s"
         params += ( other_id, scheme_id )
     update_stmt += ";"
@@ -257,14 +299,21 @@ def del_external_org_postcode( db, org_id, postcode_id, source_id,
     external organization.  The org and source are specified by their
     IDs, and NOTE THAT the postal code is ALSO specified by its ID!
 
+    Supports a wildcard '*' on postcode_id to expire all postcodes for
+    the given org_id.
+
     Will silently succeed if the postcode is not asserted, or if the
     assertion is already expired.
     """
     db.start()
     find_stmt = "SELECT * FROM master_external_org_postcode " + \
-                "WHERE external_org = %s AND postcode = %s " + \
-                "AND valid_end IS NULL;"
-    postcode_link = db.read( find_stmt, ( org_id, postcode_id ) )
+                "WHERE external_org = %s AND valid_end IS NULL"
+    params = ( org_id, )
+    if postcode_id != "*":
+        find_stmt += " AND postcode = %s"
+        params += ( postcode_id, )
+    find_stmt += ";"
+    postcode_link = db.read( find_stmt, ( params ) )
     db.finish()
 
     if postcode_link is None:
@@ -280,9 +329,12 @@ def del_external_org_postcode( db, org_id, postcode_id, source_id,
         update_stmt += ", source_comment = %s"
         params += ( comment, )
 
-    update_stmt += " WHERE external_org = %s AND postcode = %s " + \
-                   "AND valid_end IS NULL;"
-    params += ( org_id, postcode_id )
+    update_stmt += " WHERE external_org = %s AND valid_end IS NULL"
+    params += ( org_id, )
+    if postcode_id != "*":
+        update_stmt += " AND postcode = %s "
+        params += ( postcode_id, )
+    update_stmt += ";"
     _write_with_integrity( db, update_stmt, ( params ) )
 
     return
@@ -295,15 +347,23 @@ def del_external_org_relationship( db, org_1_id, org_2_id,
     valid.  The orgs, relationship type, and source are all identified
     by ID.
 
+    Supports a wildcard '*' on org_2_id, which will expire all
+    relationships of which org_1_id is part, on either side!
+
     Will silently succeed if the relationship is unasserted, or
     already marked as expired.
     """
     db.start()
     find_stmt = "SELECT * FROM master_rel_external_external " + \
-                "WHERE ext1 = %s AND ext2 = %s " + \
-                "AND rel = %s AND valid_end IS NULL;"
-    org_rel = db.read( find_stmt,
-                       ( org_1_id, org_2_id, rel_type_id ) )
+                "WHERE "
+    if org_2_id == "*":
+        find_stmt += "( ext1 = %s OR ext2 = %s )"
+        params = ( org_1_id, org_1_id )
+    else:
+        find_stmt += "ext1 = %s AND ext2 = %s AND rel = %s"
+        params = ( org_1_id, org_2_id, rel_type_id )
+    find_stmt += " AND valid_end IS NULL;"
+    org_rel = db.read( find_stmt, ( params ) )
     db.finish()
 
     if org_rel is None:
@@ -319,12 +379,105 @@ def del_external_org_relationship( db, org_1_id, org_2_id,
         update_stmt += ", source_comment = %s"
         params += ( comment, )
 
-    update_stmt += " WHERE ext1 = %s AND ext2 = %s " + \
-                   "AND rel = %s AND valid_end IS NULL;"
-    params += ( org_1_id, org_2_id, rel_type_id )
+    update_stmt += " WHERE "
+    if org_2_id == "*":
+        update_stmt += "( ext1 = %s OR ext2 = %s )"
+        params += ( org_1_id, org_1_id )
+    else:
+        update_stmt += "ext1 = %s AND ext2 = %s AND rel = %s"
+        params += ( org_1_id, org_2_id, rel_type_id )
+    update_stmt += " AND valid_end IS NULL;"
     _write_with_integrity( db, update_stmt, ( params ) )
 
     return
+
+def get_data_source_id(db, source_name):
+    """
+    Get the source identifier for a given source name.
+
+    Args:
+        db: The db instance
+        source_name: The source name
+
+    Returns:
+        str: The source id for the given source name
+
+    Raises:
+        DataSourceNonExistent: If an unknown source name is specified
+    """
+    db.start()
+    find_stmt = "SELECT id FROM master_data_source " + \
+                "WHERE name = %s;"
+    result = db.read(find_stmt, (source_name, ))
+    db.finish()
+
+    if result is None:
+        raise DataSourceNonExistent("Unknown data source: %s" % source_name)
+
+    source_id = result[0]
+    return source_id
+
+def get_scheme_id(db, scheme_name):
+    """
+    Get the scheme identifier for a given scheme name.
+
+    Args:
+        db: The db instance
+        scheme_name: The name of the scheme
+
+    Returns:
+        str: The scheme id for the given scheme name
+
+    Raises:
+        SchemeNonExistent: If an unknown scheme name is specified
+    """
+    db.start()
+    find_stmt = "SELECT id FROM master_other_id_scheme " + \
+                "WHERE name = %s;"
+    result = db.read(find_stmt, (scheme_name, ))
+    db.finish()
+
+    if result is None:
+        raise SchemeNonExistent("Unknown scheme: %s" % scheme_name)
+
+    scheme_id = result[0]
+    return scheme_id
+
+def get_supported_data_sources(db):
+    """
+    Get the list of supported data sources.
+
+    Args:
+        db: The db instance
+
+    Returns:
+        list of str: The supported data sources
+    """
+    db.start()
+    find_stmt = "SELECT name FROM master_data_source;"
+    results = db.read_many(find_stmt, ())
+    db.finish()
+
+    source_names = [result[0] for result in results]
+    return source_names
+
+def get_supported_schemes(db):
+    """
+    Get the list of supported scheme names.
+
+    Args:
+        db: The db instance
+
+    Returns:
+        list of str: The supported scheme names
+    """
+    db.start()
+    find_stmt = "SELECT name FROM master_other_id_scheme;"
+    results = db.read_many(find_stmt, ())
+    db.finish()
+
+    scheme_names = [result[0] for result in results]
+    return scheme_names
 
 def merge_external_org():
     """
@@ -368,91 +521,3 @@ def rename_external_org( db, org_id, new_name, source_id,
                                 comment=comment )
 
     return
-
-def get_scheme_id(db, scheme_name):
-    """
-    Get the scheme identifier for a given scheme name.
-
-    Args:
-        db: The db instance
-        scheme_name: The name of the scheme
-
-    Returns:
-        str: The scheme id for the given scheme name
-
-    Raises:
-        SchemeNonExistent: If an unknown scheme name is specified
-    """
-    db.start()
-    find_stmt = "SELECT id FROM master_other_id_scheme " + \
-                "WHERE name = %s;"
-    result = db.read(find_stmt, (scheme_name, ))
-    db.finish()
-
-    if result is None:
-        raise SchemeNonExistent("Unknown scheme: %s" % scheme_name)
-
-    scheme_id = result[0]
-    return scheme_id
-
-def get_supported_schemes(db):
-    """
-    Get the list of supported scheme names.
-
-    Args:
-        db: The db instance
-
-    Returns:
-        list of str: The supported scheme names
-    """
-    db.start()
-    find_stmt = "SELECT name FROM master_other_id_scheme;"
-    results = db.read_many(find_stmt, ())
-    db.finish()
-
-    scheme_names = [result[0] for result in results]
-    return scheme_names
-
-def get_data_source_id(db, source_name):
-    """
-    Get the source identifier for a given source name.
-
-    Args:
-        db: The db instance
-        source_name: The source name
-
-    Returns:
-        str: The source id for the given source name
-
-    Raises:
-        DataSourceNonExistent: If an unknown source name is specified
-    """
-    db.start()
-    find_stmt = "SELECT id FROM master_data_source " + \
-                "WHERE name = %s;"
-    result = db.read(find_stmt, (source_name, ))
-    db.finish()
-
-    if result is None:
-        raise DataSourceNonExistent("Unknown data source: %s" % source_name)
-
-    source_id = result[0]
-    return source_id
-
-def get_supported_data_sources(db):
-    """
-    Get the list of supported data sources.
-
-    Args:
-        db: The db instance
-
-    Returns:
-        list of str: The supported data sources
-    """
-    db.start()
-    find_stmt = "SELECT name FROM master_data_source;"
-    results = db.read_many(find_stmt, ())
-    db.finish()
-
-    source_names = [result[0] for result in results]
-    return source_names
