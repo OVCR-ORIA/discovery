@@ -17,9 +17,10 @@ Written for the University of Illinois.
 # @@@TODO: add_* functions will not re-assert expired assertions;
 # there should probably be a “really do this” switch.
 
-__author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"16 February 2015"
-__version__ = 1.1
+__author__ = u"Christopher R. Maden <crism@illinois.edu>, " + \
+             u"Boris Capitanu <capitanu@illinois.edu>"
+__date__ = u"11 March 2015"
+__version__ = 1.2
 
 from _mysql import IntegrityError
 
@@ -153,8 +154,15 @@ def add_external_org_relationship( db, org_1_id, org_2_id,
 
 def del_external_org():
     """
-    Unimplemented.
+    Delete (i.e., mark as no longer valid) an external organization
+    and all of its properties.
     """
+    # delete other id
+    # delete postcode
+    # delete relationships
+    # delete aliases
+    # delete the org
+
     raise NotImplementedError
 
 def del_external_org_alias( db, org_id, alias, source_id, lang='en',
@@ -201,14 +209,21 @@ def del_external_org_other_id( db, org_id, other_id, scheme_id,
     organization.  The org is specified by its integer ID, as are the
     scheme and the source for the assertion.
 
+    Supports a wildcard '*' on other_id to expire all other IDs of the
+    given org_id.
+
     Will succeed but not do anything if the ID is not asserted, or if
     the assertion is already expired.
     """
     db.start()
     find_stmt = "SELECT * FROM master_external_org_other_id " + \
-                "WHERE master_id = %s AND other_id = %s " + \
-                "AND scheme = %s AND valid_end IS NULL;"
-    other_link = db.read( find_stmt, ( org_id, other_id, scheme_id ) )
+                "WHERE master_id = %s AND valid_end IS NULL"
+    params = ( org_id, )
+    if other_id != '*':
+        find_stmt += " AND other_id = %s AND scheme = %s"
+        params += ( other_id, scheme_id )
+    find_stmt += ";"
+    other_link = db.read( find_stmt, ( params ) )
     db.finish()
 
     if other_link is None:
@@ -224,9 +239,12 @@ def del_external_org_other_id( db, org_id, other_id, scheme_id,
         update_stmt += ", source_comment = %s"
         params += ( comment, )
 
-    update_stmt += " WHERE master_id = %s AND other_id = %s " + \
-                   "AND scheme = %s AND valid_end IS NULL;"
-    params += ( org_id, other_id, scheme_id )
+    update_stmt += " WHERE master_id = %s AND valid_end IS NULL"
+    params += ( org_id, )
+    if other_id != '*':
+        update_stmt += " AND other_id = %s AND scheme = %s"
+        params += ( other_id, scheme_id )
+    update_stmt += ";"
     _write_with_integrity( db, update_stmt, ( params ) )
 
     return
