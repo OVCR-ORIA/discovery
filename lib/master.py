@@ -505,7 +505,7 @@ def rename_external_org( db, org_id, new_name, source_id,
     ext_org_name = db.read( find_stmt, ( org_id, ) )
     db.finish()
 
-    if ext_org is None:
+    if ext_org_name is None:
         raise MasterNonExistentEntity(
             "There is no external organization with ID %d." % org_id
         )
