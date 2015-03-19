@@ -10,21 +10,21 @@ DEFINE lowerlimit=24999;
 -- This is the full vendor raw data query, with no grouping, summing,
 -- or sorting.
 SELECT
-  FGBTRND_DOC_CODE,     -- for ordering
-  FGBTRND_ITEM_NUM,     -- for ordering
-  FGBTRND_SEQ_NUM,      -- for ordering
-  FABINVH_VEND_PIDM,    -- for us
-  FRVCFDA_CFDA_CODE,    -- UniqueAwardNumber
-  FRBGRNT_SPONSOR_ID,   -- UniqueAwardNumber
-  FTVFUND_FTYP_CODE,    -- UniqueAwardNumber
-  FRBGRNT_TITLE,        -- UniqueAwardNumber
-  FRBGRNT_CODE,         -- RecipientAccountNumber
-  SPRADDR_STREET_LINE1, -- for us
-  SPRADDR_CITY,         -- for us
-  SPRADDR_STAT_CODE,    -- VendorDunsNumber
-  SPRADDR_NATN_CODE,    -- VendorDunsNumber
-  SPRADDR_ZIP,          -- VendorDunsNumber
-  FGBTRND_TRANS_AMT     -- VendorPaymentAmount
+  -- FGBTRND_DOC_CODE,      -- for ordering
+  -- FGBTRND_ITEM_NUM,      -- for ordering
+  -- FGBTRND_SEQ_NUM,       -- for ordering
+  FABINVH_VEND_PIDM,     -- for us
+  FRVCFDA_CFDA_CODE,     -- UniqueAwardNumber
+  FRBGRNT_SPONSOR_ID,    -- UniqueAwardNumber
+  FTVFUND_FTYP_CODE,     -- UniqueAwardNumber
+  FRBGRNT_TITLE,         -- UniqueAwardNumber
+  FRBGRNT_CODE,          -- RecipientAccountNumber
+  SPRADDR_STREET_LINE1,  -- for us
+  SPRADDR_CITY,          -- for us
+  SPRADDR_STAT_CODE,     -- VendorDunsNumber
+  SPRADDR_NATN_CODE,     -- VendorDunsNumber
+  SPRADDR_ZIP,           -- VendorDunsNumber
+  SUM(FGBTRND_TRANS_AMT) -- VendorPaymentAmount
 FROM
   FGBTRND
   JOIN FTVFUND
@@ -65,7 +65,7 @@ WHERE
     OR SPRADDR_FROM_DATE < FABINVH_PMT_DUE_DATE )
   AND ( SPRADDR_TO_DATE IS NULL
     OR SPRADDR_TO_DATE > FABINVH_PMT_DUE_DATE )
-ORDER BY
+GROUP BY
   FGBTRND_DOC_CODE,
   FGBTRND_ITEM_NUM,
   FGBTRND_SEQ_NUM,
