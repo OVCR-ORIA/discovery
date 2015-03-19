@@ -1,69 +1,27 @@
--- DEFINE beg_date = '2014-01-01';
--- DEFINE end_date = '2014-01-01';
--- DEFINE fsyr = '14';
--- DEFINE period1 = '07';
--- DEFINE period2 = '08';
--- DEFINE period3 = '09';
--- DEFINE coas = '1';
--- DEFINE lowerlimit=24999;
+DEFINE beg_date = '2014-01-01';
+DEFINE end_date = '2014-03-31';
+DEFINE fsyr = '14';
+DEFINE period1 = '07';
+DEFINE period2 = '08';
+DEFINE period3 = '09';
+DEFINE coas = '1';
+DEFINE lowerlimit=24999;
 
--- -- This is just “Docs” subclause of M.N.’s full vendor query, using
--- -- joins.
--- SELECT
---   FGBTRND_DOC_CODE,
---   FGBTRND_TRANS_AMT
--- FROM
---   FGBTRND
---   JOIN FTVFUND ON FTVFUND_COAS_CODE = FGBTRND_COAS_CODE
---     AND FTVFUND_FUND_CODE = FGBTRND_FUND_CODE
---   JOIN FRBGRNT ON FRBGRNT_CODE = FTVFUND_GRNT_CODE
---   JOIN FABINVH ON FABINVH_CODE = FGBTRND_DOC_CODE
---   JOIN SPRADDR ON SPRADDR_PIDM = FABINVH_VEND_PIDM
---     AND SPRADDR_ATYP_CODE = FABINVH_ATYP_CODE
---     AND SPRADDR_SEQNO = FABINVH_ATYP_SEQ_NUM
--- WHERE
---   FRBGRNT_COAS_CODE = '1' -- coas
---   AND FTVFUND_FTYP_CODE IN ('4A', '4C', '4E', '4G', '4Y')     
---   AND FTVFUND_DATA_ENTRY_IND = 'Y'
---   AND FTVFUND_NCHG_DATE = '31-DEC-2099'
---   AND SUBSTR(FGBTRND_ACCT_CODE, 1, 3) <> '156'
---   AND FGBTRND_PROC_CODE IN ('O030', 'O033')
---   AND FGBTRND_LEDGER_IND = 'O'
---   AND FGBTRND_FSYR_CODE = '14' -- fsyr
---   AND FGBTRND_POSTING_PERIOD IN ('07', '08', '09') -- period[123]
---   AND FGBTRND_DOC_CODE IN (
---     SELECT FGBTRNH_DOC_CODE
---     FROM FGBTRNH
---     WHERE
---       FGBTRNH_VENDOR_PIDM IS NOT NULL
---       AND FGBTRNH_VENDOR_PIDM NOT IN (
---         SELECT FTVVENT_PIDM
---         FROM FTVVENT
---         WHERE FTVVENT_VTYP_CODE = 'VE'))
---   AND FABINVH_VEND_PIDM NOT IN (
---     SELECT FTVVENT_PIDM
---     FROM FTVVENT
---     WHERE FTVVENT_VTYP_CODE = 'VE')
---   AND ( SPRADDR_FROM_DATE IS NULL
---     OR SPRADDR_FROM_DATE < FABINVH_PMT_DUE_DATE )
---   AND ( SPRADDR_TO_DATE IS NULL
---     OR SPRADDR_TO_DATE > FABINVH_PMT_DUE_DATE )
--- ;
-
--- This is the full vendor query, with no grouping, summing, or
--- sorting.
+-- This is the full vendor raw data query, with no grouping, summing,
+-- or sorting.
 SELECT
-  FABINVH_VEND_PIDM,  -- for us
-  FRVCFDA_CFDA_CODE,  -- UniqueAwardNumber
-  FRBGRNT_SPONSOR_ID, -- UniqueAwardNumber
-  FTVFUND_FTYP_CODE,  -- UniqueAwardNumber
-  FRBGRNT_TITLE,      -- UniqueAwardNumber
-  FRBGRNT_CODE,       -- RecipientAccountNumber
-  -- SPRADDR street address? -- for us
-  SPRADDR_STAT_CODE,  -- VendorDunsNumber
-  SPRADDR_NATN_CODE,  -- VendorDunsNumber
-  SPRADDR_ZIP,        -- VendorDunsNumber
-  FGBTRND_TRANS_AMT   -- VendorPaymentAmount
+  FABINVH_VEND_PIDM,    -- for us
+  FRVCFDA_CFDA_CODE,    -- UniqueAwardNumber
+  FRBGRNT_SPONSOR_ID,   -- UniqueAwardNumber
+  FTVFUND_FTYP_CODE,    -- UniqueAwardNumber
+  FRBGRNT_TITLE,        -- UniqueAwardNumber
+  FRBGRNT_CODE,         -- RecipientAccountNumber
+  SPRADDR_STREET_LINE1, -- for us
+  SPRADDR_CITY,         -- for us
+  SPRADDR_STAT_CODE,    -- VendorDunsNumber
+  SPRADDR_NATN_CODE,    -- VendorDunsNumber
+  SPRADDR_ZIP,          -- VendorDunsNumber
+  FGBTRND_TRANS_AMT     -- VendorPaymentAmount
 FROM
   FGBTRND
   JOIN FTVFUND
@@ -78,15 +36,15 @@ FROM
     AND SPRADDR_ATYP_CODE = FABINVH_ATYP_CODE
     AND SPRADDR_SEQNO = FABINVH_ATYP_SEQ_NUM
 WHERE
-  FRBGRNT_COAS_CODE = '1' -- coas
+  FRBGRNT_COAS_CODE = '&&coas'
   AND FTVFUND_FTYP_CODE IN ('4A', '4C', '4E', '4G', '4Y')     
   AND FTVFUND_DATA_ENTRY_IND = 'Y'
   AND FTVFUND_NCHG_DATE = '31-DEC-2099'
   AND SUBSTR(FGBTRND_ACCT_CODE, 1, 3) <> '156'
   AND FGBTRND_PROC_CODE IN ('O030', 'O033')
   AND FGBTRND_LEDGER_IND = 'O'
-  AND FGBTRND_FSYR_CODE = '14' -- fsyr
-  AND FGBTRND_POSTING_PERIOD IN ('07', '08', '09') -- period[123]
+  AND FGBTRND_FSYR_CODE = '&&fsyr'
+  AND FGBTRND_POSTING_PERIOD IN ('&&period1', '&&period2', '&&period3')
   AND FGBTRND_DOC_CODE IN (
     SELECT FGBTRNH_DOC_CODE
     FROM FGBTRNH
