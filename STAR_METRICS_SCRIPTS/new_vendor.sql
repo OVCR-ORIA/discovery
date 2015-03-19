@@ -9,10 +9,6 @@
 
 -- This is just “Docs” subclause of M.N.’s full vendor query, using
 -- joins.
-WITH ve_pidms AS (
-  SELECT FTVVENT_PIDM pidm
-    FROM FTVVENT
-    WHERE FTVVENT_VTYP_CODE = 'VE' )
 SELECT
   FGBTRND_DOC_CODE,
   FGBTRND_TRANS_AMT
@@ -29,7 +25,7 @@ WHERE
   FRBGRNT_COAS_CODE = '1' -- coas
   AND FTVFUND_FTYP_CODE IN ('4A', '4C', '4E', '4G', '4Y')     
   AND FTVFUND_DATA_ENTRY_IND = 'Y'
-  AND FTVFUND_NCHG_DATE = '31-DEC-2099' -- why?
+  AND FTVFUND_NCHG_DATE = '31-DEC-2099'
   AND SUBSTR(FGBTRND_ACCT_CODE, 1, 3) <> '156'
   AND FGBTRND_PROC_CODE IN ('O030', 'O033')
   AND FGBTRND_LEDGER_IND = 'O'
@@ -40,8 +36,14 @@ WHERE
     FROM FGBTRNH
     WHERE
       FGBTRNH_VENDOR_PIDM IS NOT NULL
-      AND FGBTRNH_VENDOR_PIDM NOT IN (SELECT pidm FROM ve_pidms))
-  AND FABINVH_VEND_PIDM NOT IN (SELECT pidm FROM ve_pidms)
+      AND FGBTRNH_VENDOR_PIDM NOT IN (
+        SELECT FTVVENT_PIDM
+        FROM FTVVENT
+        WHERE FTVVENT_VTYP_CODE = 'VE'))
+  AND FABINVH_VEND_PIDM NOT IN (
+    SELECT FTVVENT_PIDM
+    FROM FTVVENT
+    WHERE FTVVENT_VTYP_CODE = 'VE')
   AND ( SPRADDR_FROM_DATE IS NULL
     OR SPRADDR_FROM_DATE < FABINVH_PMT_DUE_DATE )
   AND ( SPRADDR_TO_DATE IS NULL
@@ -50,18 +52,18 @@ WHERE
 
 -- -- This is the full vendor query, with no grouping, summing, or
 -- -- sorting.
--- WITH ve_pidms AS (
---   SELECT FTVVENT_PIDM pidm
---     FROM FTVVENT
---     WHERE FTVVENT_VTYP_CODE = 'VE' )
 -- SELECT
---   FABINVH_VEND_PIDM, -- for us
---   FRVCFDA_CFDA_CODE, -- UniqueAwardNumber
---   FRBGRNT_CODE,      -- UniqueAwardNumber
---   FTVFUND_FTYP_CODE, -- 
---   FGBTRND_TRANS_AMT,
---   SPRADDR_NATN_CODE, -- makes up pseudo-DUNS
---   SPRADDR_ZIP -- informs pseudo-DUNS
+--   FABINVH_VEND_PIDM,  -- for us
+--   FRVCFDA_CFDA_CODE,  -- UniqueAwardNumber
+--   FRBGRNT_SPONSOR_ID, -- UniqueAwardNumber
+--   FTVFUND_FTYP_CODE,  -- UniqueAwardNumber
+--   FRBGRNT_TITLE,      -- UniqueAwardNumber
+--   FRBGRNT_CODE,       -- RecipientAccountNumber
+--   -- SPRADDR street address? -- for us
+--   SPRADDR_STAT_CODE,  -- VendorDunsNumber
+--   SPRADDR_NATN_CODE,  -- VendorDunsNumber
+--   SPRADDR_ZIP,        -- VendorDunsNumber
+--   FGBTRND_TRANS_AMT   -- VendorPaymentAmount
 -- FROM
 --   FGBTRND
 --   JOIN FTVFUND
@@ -90,8 +92,14 @@ WHERE
 --     FROM FGBTRNH
 --     WHERE
 --       FGBTRNH_VENDOR_PIDM IS NOT NULL
---       AND FGBTRNH_VENDOR_PIDM NOT IN (SELECT pidm FROM ve_pidms))
---   AND FABINVH_VEND_PIDM NOT IN (SELECT pidm FROM ve_pidms)
+--       AND FGBTRNH_VENDOR_PIDM NOT IN (
+--         SELECT FTVVENT_PIDM
+--         FROM FTVVENT
+--         WHERE FTVVENT_VTYP_CODE = 'VE'))
+--   AND FABINVH_VEND_PIDM NOT IN (
+--     SELECT FTVVENT_PIDM
+--     FROM FTVVENT
+--     WHERE FTVVENT_VTYP_CODE = 'VE')
 --   AND ( SPRADDR_FROM_DATE IS NULL
 --     OR SPRADDR_FROM_DATE < FABINVH_PMT_DUE_DATE )
 --   AND ( SPRADDR_TO_DATE IS NULL
