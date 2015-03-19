@@ -1,18 +1,6 @@
-DEFINE beg_date = '2014-01-01';
-DEFINE end_date = '2014-03-31';
-DEFINE fsyr = '14';
-DEFINE period1 = '07';
-DEFINE period2 = '08';
-DEFINE period3 = '09';
-DEFINE coas = '1';
-DEFINE lowerlimit=24999;
-
 -- This is the full vendor raw data query, with no grouping, summing,
 -- or sorting.
 SELECT
-  -- FGBTRND_DOC_CODE,      -- for ordering
-  -- FGBTRND_ITEM_NUM,      -- for ordering
-  -- FGBTRND_SEQ_NUM,       -- for ordering
   FABINVH_VEND_PIDM,     -- for us
   FRVCFDA_CFDA_CODE,     -- UniqueAwardNumber
   FRBGRNT_SPONSOR_ID,    -- UniqueAwardNumber
