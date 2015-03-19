@@ -10,6 +10,9 @@ DEFINE lowerlimit=24999;
 -- This is the full vendor raw data query, with no grouping, summing,
 -- or sorting.
 SELECT
+  FGBTRND_DOC_CODE,     -- for ordering
+  FGBTRND_ITEM_NUM,     -- for ordering
+  FGBTRND_SEQ_NUM,      -- for ordering
   FABINVH_VEND_PIDM,    -- for us
   FRVCFDA_CFDA_CODE,    -- UniqueAwardNumber
   FRBGRNT_SPONSOR_ID,   -- UniqueAwardNumber
@@ -62,4 +65,9 @@ WHERE
     OR SPRADDR_FROM_DATE < FABINVH_PMT_DUE_DATE )
   AND ( SPRADDR_TO_DATE IS NULL
     OR SPRADDR_TO_DATE > FABINVH_PMT_DUE_DATE )
+ORDER BY
+  FGBTRND_DOC_CODE,
+  FGBTRND_ITEM_NUM,
+  FGBTRND_SEQ_NUM,
+  FRBGRNT_CODE
 ;
