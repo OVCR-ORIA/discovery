@@ -39,9 +39,71 @@ SERVER = "reportprod.admin.uillinois.edu"
 SERVICE = "REPTPROD"
 SQLPLUS = LIB_PATH + "/sqlplus.sh"
 
-# Date validation constants.
+# Data validation constants.
 FIRST_FY = 1867 # oldest fiscal year allowed
 FY_ROLLOVER = 7 # fiscal year increments in July
+US_STATES = [ "AA", # Armed Forces, Americas
+              "AE", # Armed Forces, Europe
+              "AK",
+              "AL",
+              "AP", # Armed Forces, Pacific
+              "AR",
+              "AS", # American Samoa
+              "AZ",
+              "CA",
+              "CO",
+              "CT",
+              "DC",
+              "DE",
+              "FL",
+              "FM", # Micronesia
+              "GA",
+              "GU", # Guam
+              "HI",
+              "IA",
+              "ID",
+              "IL",
+              "IN",
+              "KS",
+              "KY",
+              "LA",
+              "MA",
+              "MD",
+              "ME",
+              "MH", # Marshall Is.
+              "MI",
+              "MN",
+              "MO",
+              "MP", # Northern Marianas
+              "MS",
+              "MT",
+              "NC",
+              "ND",
+              "NE",
+              "NH",
+              "NJ",
+              "NM",
+              "NV",
+              "NY",
+              "OH",
+              "OK",
+              "OR",
+              "PA",
+              "PR",
+              "PW", # Palau
+              "RI",
+              "SC",
+              "SD",
+              "TN",
+              "TX",
+              "UT",
+              "VA",
+              "VI", # Virgin Is.
+              "VT",
+              "WA",
+              "WI",
+              "WV",
+              "WY" ]
 
 # CSV output constants.
 HEADERS = { "award" : # CSV header lines
@@ -81,7 +143,8 @@ HEADERS = { "award" : # CSV header lines
                   "SponsorID",
                   "FundTypeCode",
                   "GrantTitle",
-                  "VendorAddress",
+                  "VendorAddress1",
+                  "VendorAddress2",
                   "VendorCity",
                   "VendorState",
                   "VendorNation",
@@ -136,6 +199,64 @@ class StarMetricsOutputError( Exception ):
     """
     pass
 
+def construct_duns( state, nation, postcode ):
+    """
+    Create a pseudo-DUNS number out of a state, nation, and postal
+    code.  Handle some weird edge cases.
+    """
+    state = state.strip()
+    nation = nation.strip()
+    postcode = postcode.strip()
+
+    # Ideally, Z+postcode for US, F+postcode for foreign, but the
+    # source data is bad.
+
+    # Normally, a null nation means USA, but there are many Canadian
+    # provinces given without nation, and null state codes; assume
+    # they’re all foreign.
+    if nation == "" and US_STATES.index( state ):
+        nation = "US"
+
+    # We could add more structural validity checks here, but this is
+    # the logic in the predecessor query.
+    if nation == "US":
+        if postcode == "":
+            return "Z00000-0000"
+        else:
+            return "Z" + postcode
+    else:
+        if len( postcode ) > 9:
+            return "F000000000"
+        return "F" + postcode
+
+def construct_unique_award_number( cfda, sponsor, ftype, title ):
+    """
+    Construct a unique award number from the CFDA code, sponsor ID,
+    fund type, and grant title.
+    """
+    # Logic is from M.N.’s original SQL scripts, not fully understood
+    # by this author.
+
+    if cfda[3:7] == "000" or cfda[0:2] == "99":
+        return "00.070 Federal - Other"
+
+    if cfda.strip() == "":
+        if ftype == "4A" or ftype == "4Y":
+            cfda = "00.070"
+        elif ftype == "4G":
+            cfda = "00.200"
+        else:
+            cfda = "00.000"
+    elif cfda == "93.848":
+        cfda = "93.847"
+
+    # In original SQL, this substitution happens only if CFDA is NULL;
+    # if not, the value 0 is used instead.  An error?
+    if sponsor.strip() == "":
+        sponsor = title
+
+    return cfda + " " + sponsor
+
 def handle_vendor_line( sql_line, csv_writer, csv_writer_detail ):
     """
     Given a line of quoted, comma-delimited SQL output and a CSV
@@ -151,8 +272,34 @@ def handle_vendor_line( sql_line, csv_writer, csv_writer_detail ):
     # For each row, generate the proper STAR METRICS report, but also
     # output the fully-detailed version.
     for row in csv_reader:
-        csv_writer.writerow( row )
+        # Write out the full detail.
         csv_writer_detail.writerow( row )
+
+        # Now construct the STAR METRICS report row.
+        # The first two fields are dates; use as-is.
+        sm_fields = row[0:2]
+
+        # Create the UniqueAwardNumber out of the CFDA code, sponsor
+        # ID, fund type, and grant title.
+        sm_fields.append( construct_unique_award_number( row[3],
+                                                         row[4],
+                                                         row[5],
+                                                         row[6] ) )
+
+        # Add the RecipientAccountNumber
+        sm_fields.append( row[7] )
+
+        # Build the pseudo-DUNS number out of the state, nation, and
+        # ZIP or postal codes.
+        sm_fields.append( construct_duns( row[11],
+                                          row[12],
+                                          row[13] ) )
+
+        # Add the VendorPaymentAmount.
+        sm_fields.append( row[14] )
+
+        # Write out the STAR METRICS report.
+        csv_writer.writerow( sm_fields )
     return
 
 def write_csv_line( sql_line, csv_writer, report_type ):
@@ -405,7 +552,7 @@ SET TRIMSPOOL ON;
         if outfile:
             if line.startswith( "SQL>" ):
                 writer = None
-                logging.info( "Closing output file." )
+                logging.info( "Closing output file(s)." )
                 outfile.close()
                 outfile = None
                 if outfile_detail:

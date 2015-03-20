@@ -10,6 +10,7 @@ SELECT
   FRBGRNT_TITLE || '},}' ||
   FRBGRNT_CODE || '},}' ||
   SPRADDR_STREET_LINE1 || '},}' ||
+  SPRADDR_STREET_LINE2 || '},}' ||
   SPRADDR_CITY || '},}' ||
   SPRADDR_STAT_CODE || '},}' ||
   SPRADDR_NATN_CODE || '},}' ||
@@ -24,6 +25,7 @@ FROM (
     FRBGRNT_TITLE,         -- UniqueAwardNumber
     FRBGRNT_CODE,          -- RecipientAccountNumber
     SPRADDR_STREET_LINE1,  -- for us
+    SPRADDR_STREET_LINE2,  -- for us
     SPRADDR_CITY,          -- for us
     SPRADDR_STAT_CODE,     -- VendorDunsNumber
     SPRADDR_NATN_CODE,     -- VendorDunsNumber
