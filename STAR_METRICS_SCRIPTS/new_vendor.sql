@@ -86,5 +86,6 @@ FROM (
     SPRADDR_CITY,
     SPRADDR_STAT_CODE,
     SPRADDR_NATN_CODE,
-    SPRADDR_ZIP
-);
+    SPRADDR_ZIP)
+WHERE VendorPaymentAmount > &&lowerlimit
+;
