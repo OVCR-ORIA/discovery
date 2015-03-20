@@ -8,8 +8,8 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"24 February 2015"
-__version__ = 1.4
+__date__ = u"20 March 2015"
+__version__ = 1.5
 
 # Adjust the load path for common data loading operations.
 import sys
@@ -94,6 +94,14 @@ sql_line_start_re = re.compile( SQL_LINE_START_RE )
 sub_vendor_fallback_re = re.compile( SUB_VENDOR_FALLBACK_RE )
 sub_vendor_remnant_re = re.compile( SUB_VENDOR_REMNANT_RE )
 
+class OracleDump( csv.excel ):
+    """
+    A CSV reader dialect, based on the Excel dialect, but with an
+    idiosyncratic quote character.  Thank you, Oracle, for not
+    providing any useful output tools!
+    """
+    quotechar = '}'
+
 class StarMetricsAuthenticationError( Exception ):
     """
     Raised when the SQL*Plus client fails to connect for some reason
@@ -113,11 +121,27 @@ class StarMetricsOutputError( Exception ):
     """
     pass
 
+def handle_vendor_line( sql_line, csv_writer ):
+    """
+    Given a line of quoted, comma-delimited SQL output and a CSV
+    writer linked to a destination file, interpret the fields as a
+    STAR METRICS vendor report, and write to the output file.
+    """
+    # Making a new reader instance for every line is inefficient, but
+    # given the highly heterogeneous input, I’m not sure how else to
+    # do this.
+    csv_reader = csv.reader( sql_line.splitlines(1),
+                             dialect=OracleDump )
+    for row in csv_reader:
+        csv_writer.writerow( row )
+    return
+
 def write_csv_line( sql_line, csv_writer, report_type ):
     """
-    Given a line of SQL fixed-width output, a destination file, and a
-    report type, interpret the fields in the line according to the
-    report type, and write the CSV equivalent to the output file.
+    Given a line of SQL fixed-width output, CSV writer linked to a
+    destination file, and a report type, interpret the fields in the
+    line according to the report type, and write the CSV equivalent to
+    the output file.
     """
     # Everything starts with start date, end date, unique award, and
     # recipient.
@@ -141,7 +165,7 @@ def write_csv_line( sql_line, csv_writer, report_type ):
                              ( cfda_no, award_m.group(1) ),
                          award_m.group(2), # acct. no.
                          float( award_m.group(3) ) ] ) # amount
-    elif report_type == "subaward" or report_type == "vendor":
+    elif report_type == "subaward"
         fallback = False
         sub_vendor_m = sub_vendor_remnant_re.match( m.group(4) )
         if sub_vendor_m is None:
@@ -320,7 +344,7 @@ SET TRIMSPOOL ON;
 """ )
     wfile.write( "@" + CWD + "/star_metrics_award.sql\n" )
     wfile.write( "@" + CWD + "/star_metrics_subaward.sql\n" )
-    wfile.write( "@" + CWD + "/star_metrics_vendor.sql\n" )
+    wfile.write( "@" + CWD + "/new_vendor.sql\n" )
     wfile.write( "@" + CWD + "/star_metrics_employee_anon.sql\n" )
     wfile.close()
 
@@ -364,6 +388,8 @@ SET TRIMSPOOL ON;
                 outfile.close()
                 outfile = None
                 report_idx += 1
+            elif report == "vendor":
+                handle_vendor_line( line, writer )
             else:
                 write_csv_line( line, writer, report )
             continue
@@ -390,7 +416,10 @@ SET TRIMSPOOL ON;
             outfile = open( path.join( outdir, outfn ), "w" )
             writer = csv.writer( outfile )
             writer.writerow( HEADERS[ report ] )
-            write_csv_line( line, writer, report )
+            if report == "vendor":
+                handle_vendor_line( line, writer )
+            else:
+                write_csv_line( line, writer, report )
             continue
 
     # Remove the generated file.

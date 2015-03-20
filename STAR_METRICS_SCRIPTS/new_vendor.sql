@@ -1,8 +1,8 @@
 SELECT
   TO_CHAR( TO_DATE( '&&beg_date', 'DD-MON-YYYY' ),
-           'YYYY-MM-DD') || ',' ||
+           'YYYY-MM-DD' ) || ',' ||
   TO_CHAR( TO_DATE( '&&end_date', 'DD-MON-YYYY' ),
-           'YYYY-MM-DD') || ',' ||
+           'YYYY-MM-DD' ) || ',' ||
   FABINVH_VEND_PIDM || ',}' ||
   FRVCFDA_CFDA_CODE || '},}' ||
   FRBGRNT_SPONSOR_ID || '},}' ||
@@ -13,8 +13,8 @@ SELECT
   SPRADDR_CITY || '},}' ||
   SPRADDR_STAT_CODE || '},}' ||
   SPRADDR_NATN_CODE || '},}' ||
-  SPRADDR_ZIP || '},}' ||
-  VendorPaymentAmount || '}'
+  SPRADDR_ZIP || '},' ||
+  VendorPaymentAmount
 FROM (
   SELECT
     FABINVH_VEND_PIDM,     -- for us
