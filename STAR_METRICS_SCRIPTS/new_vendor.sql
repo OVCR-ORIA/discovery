@@ -1,8 +1,8 @@
 SELECT
   TO_CHAR( TO_DATE( '&&beg_date', 'DD-MON-YYYY' ),
-           'YYYY-MM-DD') PeriodStartDate || ',' ||
+           'YYYY-MM-DD') || ',' ||
   TO_CHAR( TO_DATE( '&&end_date', 'DD-MON-YYYY' ),
-           'YYYY-MM-DD') PeriodEndDate || ',' ||
+           'YYYY-MM-DD') || ',' ||
   FABINVH_VEND_PIDM || ',}' ||
   FRVCFDA_CFDA_CODE || '},}' ||
   FRBGRNT_SPONSOR_ID || '},}' ||
