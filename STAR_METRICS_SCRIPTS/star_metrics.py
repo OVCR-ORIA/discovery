@@ -72,7 +72,22 @@ HEADERS = { "award" : # CSV header lines
                   "UniqueAwardNumber",
                   "RecipientAccountNumber",
                   "VendorDunsNumber",
+                  "VendorPaymentAmount" ],
+            "vendor_detail" :
+                [ "PeriodStartDate",
+                  "PeriodEndDate",
+                  "VendorPIDM",
+                  "CFDACode",
+                  "SponsorID",
+                  "FundTypeCode",
+                  "GrantTitle",
+                  "VendorAddress",
+                  "VendorCity",
+                  "VendorState",
+                  "VendorNation",
+                  "VendorZIP",
                   "VendorPaymentAmount" ] }
+
 REPORTS = [ "award", "subaward", "vendor", "employee" ]
 UNIV_ABBR = "UIUC" # University name for filenames
 
@@ -121,7 +136,7 @@ class StarMetricsOutputError( Exception ):
     """
     pass
 
-def handle_vendor_line( sql_line, csv_writer ):
+def handle_vendor_line( sql_line, csv_writer, csv_writer_detail ):
     """
     Given a line of quoted, comma-delimited SQL output and a CSV
     writer linked to a destination file, interpret the fields as a
@@ -132,8 +147,12 @@ def handle_vendor_line( sql_line, csv_writer ):
     # do this.
     csv_reader = csv.reader( sql_line.splitlines(1),
                              dialect=OracleDump )
+
+    # For each row, generate the proper STAR METRICS report, but also
+    # output the fully-detailed version.
     for row in csv_reader:
         csv_writer.writerow( row )
+        csv_writer_detail.writerow( row )
     return
 
 def write_csv_line( sql_line, csv_writer, report_type ):
@@ -165,7 +184,7 @@ def write_csv_line( sql_line, csv_writer, report_type ):
                              ( cfda_no, award_m.group(1) ),
                          award_m.group(2), # acct. no.
                          float( award_m.group(3) ) ] ) # amount
-    elif report_type == "subaward"
+    elif report_type == "subaward":
         fallback = False
         sub_vendor_m = sub_vendor_remnant_re.match( m.group(4) )
         if sub_vendor_m is None:
@@ -358,8 +377,10 @@ SET TRIMSPOOL ON;
     errors = False
     in_vars = False
     outfile = None
+    outfile_detail = None
     report_idx = 0
     writer = None
+    writer_detail = None
     var_sub_re = re.compile( VAR_SUB_RE )
 
     # Read the results.
@@ -387,9 +408,13 @@ SET TRIMSPOOL ON;
                 logging.info( "Closing output file." )
                 outfile.close()
                 outfile = None
+                if outfile_detail:
+                    writer_detail = None
+                    outfile_detail.close()
+                    outfile_detail = None
                 report_idx += 1
             elif report == "vendor":
-                handle_vendor_line( line, writer )
+                handle_vendor_line( line, writer, writer_detail )
             else:
                 write_csv_line( line, writer, report )
             continue
@@ -417,7 +442,19 @@ SET TRIMSPOOL ON;
             writer = csv.writer( outfile )
             writer.writerow( HEADERS[ report ] )
             if report == "vendor":
-                handle_vendor_line( line, writer )
+                outfn_detail = "%s_%s_detail_%s.csv" % \
+                               ( UNIV_ABBR,
+                                 report.capitalize(),
+                                 end_date_str )
+                logging.info( "Opening output file %s" %
+                              outfn_detail )
+                outfile_detail = open( path.join( outdir,
+                                                  outfn_detail ),
+                                       "w" )
+                writer_detail = csv.writer( outfile_detail )
+                writer_detail.writerow(
+                    HEADERS[ report + "_detail" ] )
+                handle_vendor_line( line, writer, writer_detail )
             else:
                 write_csv_line( line, writer, report )
             continue
