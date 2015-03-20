@@ -48,6 +48,11 @@ class RelationshipNonExistent(Exception):
     Raised when an unknown relationship is specified.
     """
 
+class RelationshipNonExistent(Exception):
+    """
+    Raised when an unknown relationship is specified.
+    """
+
 def _write_with_integrity( db, stmt, params ):
     """
     Generic function for writing an insert statement with foreign key
