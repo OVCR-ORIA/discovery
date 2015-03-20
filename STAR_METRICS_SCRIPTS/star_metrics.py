@@ -143,6 +143,7 @@ HEADERS = { "award" : # CSV header lines
                   "SponsorID",
                   "FundTypeCode",
                   "GrantTitle",
+                  "RecipientAccountNumber",
                   "VendorAddress1",
                   "VendorAddress2",
                   "VendorCity",
