@@ -9,17 +9,60 @@ database.  Includes offline mockup for testing and development, and
 command-line arguments for connection.
 
 Written for the University of Illinois.
+
+Example usage:
+
+    # Parse user options.
+    parser = oria.ArgumentParser(
+        description="loads data into ORIA DB"
+    )
+    parser.add_argument( "file", type=open,
+                         help="file to read" )
+    args = parser.parse_args()
+
+    # Pick which database to connect to.
+    if args.database is None:
+        db_name = oria.DB_BASE_TEST
+    else:
+        db_name = args.database
+
+    # Connect to the database.
+    db = oria.DBConnection( db=db_name, offline=args.offline,
+                            db_write=args.db_write, debug=args.debug )
+
+    # Look up ID by key:
+    db.start()
+    db.fetch_id( table, key_name, key_value, key_value_cache )
+    db.finish()
+
+    # Assert a key-value pair in the database:
+    db.get_or_set_id( key_value_cache, table, key_name,
+                      column_values )
+
+    # Read an expected single result:
+    db.start()
+    result_row = db.read( statement, params )
+    db.finish()
+
+    # Get possible multiple results:
+    result_rows = db.read_many( statement, params )
+
+    # Write to the database:
+    db.start()
+    db.write( statement, params )
+    db.finish()
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"11 February 2015"
-__version__ = 1.4
+__date__ = u"23 March 2015"
+__version__ = 1.5
 
 import argparse
 from MySQLdb import connect
 
 # DB access constants
 DB_BASE = "oria_master"
+DB_BASE_TEST = "oria_test"
 DB_HOST = "localhost"
 DB_PORT = 3306
 DB_PASS = "justdroning"
@@ -47,6 +90,9 @@ class ArgumentParser( argparse.ArgumentParser ):
                            help="do not actually write changes to DB" )
         self.add_argument( "-d", "--debug", action="store_true",
                            help="explain everything going on" )
+        self.add_argument( "--db", "--database",
+                           choices=[ "master", "test" ],
+                           help="database to write to" )
         return
 
     def parse_args( self ):
@@ -61,17 +107,22 @@ class ArgumentParser( argparse.ArgumentParser ):
         # values.
         arguments.db_write = not arguments.offline and \
             not arguments.test
+        if args.database == "master":
+            args.database = DB_BASE
+        elif args.database == "test":
+            args.database = DB_BASE_TEST
 
         return arguments
 
 class DBConnection( object ):
     """
     Broker connections to the ORIA database, including faking it
-    depending on test or offline status.
+    depending on test or offline status.  Defaults to production mode
+    (live master database, writing, no debug).
     """
-    def __init__( self, host=DB_HOST, port=DB_PORT, user=DB_USER, passwd=DB_PASS,
-                  db=DB_BASE, offline=False, db_write=True,
-                  debug=False ):
+    def __init__( self, host=DB_HOST, port=DB_PORT, user=DB_USER,
+                  passwd=DB_PASS, db=DB_BASE, offline=False,
+                  db_write=True, debug=False ):
         """
         Start a connection to the database, if appropriate.  Fake it
         if not, to make writing easier.
