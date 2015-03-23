@@ -676,7 +676,7 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                      "master_external_org_alias " + \
                      "( external_org, alias, lang, source, " + \
                      "source_comment ) " + \
-                     "SELECT %s, alias, lang, source, " + \
+                     "SELECT %s AS external_org, alias, lang, source, " + \
                      "source_comment " + \
                      "FROM master_external_org_alias " + \
                      "WHERE external_org = %s AND valid_end IS NULL;"
@@ -690,7 +690,7 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                    "master_external_org_other_id " + \
                    "( master_id, other_id, scheme, source, " + \
                    "source_comment ) " + \
-                   "SELECT %s, other_id, scheme, source, " + \
+                   "SELECT %s AS master_id, other_id, scheme, source, " + \
                    "source_comment " + \
                    "FROM master_external_org_other_id " + \
                    "WHERE master_id = %s AND valid_end IS NULL;"
@@ -704,7 +704,7 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                     "master_external_org_postcode " + \
                     "( external_org, postcode, source, " + \
                     "source_comment ) " + \
-                    "SELECT %s, postcode, source, source_comment " + \
+                    "SELECT %s AS external_org, postcode, source, source_comment " + \
                     "FROM master_external_org_postcode " + \
                     "WHERE external_org = %s AND valid_end IS NULL;"
     post_add_params = ( keep_id, lose_id )
@@ -720,7 +720,7 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                      "master_rel_external_external " + \
                      "( ext1, ext2, rel, source, " + \
                      "source_comment ) " + \
-                     "SELECT %s, ext2, rel, source, " + \
+                     "SELECT %s AS ext1, ext2, rel, source, " + \
                      "source_comment " + \
                      "FROM master_rel_external_external " + \
                      "WHERE ext1 = %s AND ext2 <> %s " + \
@@ -731,7 +731,7 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                      "master_rel_external_external " + \
                      "( ext1, ext2, rel, source, " + \
                      "source_comment ) " + \
-                     "SELECT ext1, %s, rel, source, " + \
+                     "SELECT ext1, %s AS ext2, rel, source, " + \
                      "source_comment " + \
                      "FROM master_rel_external_external " + \
                      "WHERE ext2 = %s AND ext1 <> %s " + \
