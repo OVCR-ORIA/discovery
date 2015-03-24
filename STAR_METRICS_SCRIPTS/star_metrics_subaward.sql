@@ -15,10 +15,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other' 
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)     
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber",           
          a.frbgrnt_code "RecipientAccountNumber", 
          CASE 
@@ -95,10 +105,21 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)                 
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0) END,
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'
+      END,
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
                 then 'Z00000-0000'  
@@ -413,10 +434,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||a.frbgrnt_title                 
-         else frvcfda_cfda_code||' '||a.frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'
          END as "UniqueAwardNumber",          
          a.frbgrnt_code "RecipientAccountNumber",
          CASE 
@@ -493,10 +524,20 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||a.frbgrnt_title               
-         else frvcfda_cfda_code||' '||a.frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END, 
          CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
@@ -803,5 +844,5 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num,
                 then 'F'||f.spraddr_zip             
            else 'Z00000-0000' 
          END, 
-         d.fgbtrnd_trans_amt;
-
+         d.fgbtrnd_trans_amt; 
+ 

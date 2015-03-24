@@ -11,14 +11,24 @@
 -- 4A and 4Y
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",        
-         CASE           
+         CASE                  
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)              
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber",        
          frbgrnt_code "RecipientAccountNumber",
          sum(fgbtrnd_trans_amt) "OverheadCharged"    
@@ -45,10 +55,21 @@ group by frbgrnt_code,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)              
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0) END   
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
+      END   
 union all
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate", 
@@ -57,10 +78,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||frbgrnt_title                  
-         else frvcfda_cfda_code||' '||frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber",               
          frbgrnt_code "RecipientAccountNumber",
          sum(fgbtrnd_trans_amt) "OverheadCharged"    
@@ -87,10 +118,20 @@ group by frbgrnt_code,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||frbgrnt_title                  
-         else frvcfda_cfda_code||' '||frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END
 union all
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
@@ -153,10 +194,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)              
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber",          
          frbgrnt_code "RecipientAccountNumber",
          sum(fgbtrnd_trans_amt) "OverheadCharged"    
@@ -183,10 +234,20 @@ group by frbgrnt_code,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)              
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'
          END 
 union all
 -- not 99.MULTI
@@ -197,10 +258,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||frbgrnt_title                
-         else frvcfda_cfda_code||' '||frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber",           
          frbgrnt_code "RecipientAccountNumber",
          sum(fgbtrnd_trans_amt) "OverheadCharged"    
@@ -227,10 +298,20 @@ group by frbgrnt_code,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||frbgrnt_title                
-         else frvcfda_cfda_code||' '||frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'
          END
 union all
 -- Not 99.MULTI
@@ -342,10 +423,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)              
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'
          END as "UniqueAwardNumber",         
          frbgrnt_code "RecipientAccountNumber",
          sum(fgbtrnd_trans_amt) "OverheadCharged"    
@@ -371,10 +462,20 @@ group by frbgrnt_code,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other' 
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)              
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END 
 union all
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
@@ -384,10 +485,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other' 
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||frbgrnt_title                 
-         else frvcfda_cfda_code||' '||frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'
          END as "UniqueAwardNumber",         
          frbgrnt_code "RecipientAccountNumber",
          sum(fgbtrnd_trans_amt) "OverheadCharged"    
@@ -413,10 +524,20 @@ group by frbgrnt_code,
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||frbgrnt_title                
-         else frvcfda_cfda_code||' '||frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'
          END
 union all
 --no cfda 

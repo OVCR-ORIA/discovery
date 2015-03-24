@@ -16,10 +16,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)               
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber", 
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
@@ -120,10 +130,20 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)               
-         else frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0) 
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
       END,
       CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
@@ -154,10 +174,25 @@ union all
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",  
          CASE 
-           when c.ftvfund_ftyp_code in ('4A', '4Y') then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code in ('4C', '4E') then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code = '4G' then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0)  
-           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
+            when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is null
+           then '00.070 '||a.frbgrnt_title         
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is not null            
+           then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is null            
+           then '00.000 '||a.frbgrnt_title
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0) 
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is null
+           then '00.200 '||a.frbgrnt_title 
+           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0)         
          END as  "UniqueAwardNumber,",          
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
@@ -253,9 +288,24 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      and d.fgbtrnd_doc_code = Docs.doccd                                      
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
         CASE 
-           when c.ftvfund_ftyp_code in ('4A', '4Y') then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code in ('4C', '4E') then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code = '4G' then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0)  
+           when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
+            when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is null
+           then '00.070 '||a.frbgrnt_title         
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is not null            
+           then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is null            
+           then '00.000 '||a.frbgrnt_title
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0) 
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is null
+           then '00.200 '||a.frbgrnt_title 
            else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0) 
        END, 
        CASE 
@@ -290,10 +340,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||a.frbgrnt_title                  
-         else frvcfda_cfda_code||' '||a.frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber",    
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
@@ -394,10 +454,20 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||a.frbgrnt_title                  
-         else frvcfda_cfda_code||' '||a.frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
        END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
@@ -428,10 +498,25 @@ union all
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate", 
           CASE 
-           when c.ftvfund_ftyp_code in ('4A', '4Y') then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code in ('4C', '4E') then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code = '4G' then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0)  
-           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
+            when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is null
+           then '00.070 '||a.frbgrnt_title         
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is not null            
+           then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is null            
+           then '00.000 '||a.frbgrnt_title
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0) 
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is null
+           then '00.200 '||a.frbgrnt_title 
+           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0)            
          END as  "UniqueAwardNumber,",               
          a.frbgrnt_code "RecipientAccountNumber",
          CASE 
@@ -527,10 +612,25 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      and d.fgbtrnd_doc_code = Docs.doccd                                   
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
        CASE 
-           when c.ftvfund_ftyp_code in ('4A', '4Y') then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code in ('4C', '4E') then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code = '4G' then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0)  
-           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0) 
+           when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
+            when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is null
+           then '00.070 '||a.frbgrnt_title         
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is not null            
+           then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is null            
+           then '00.000 '||a.frbgrnt_title
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0) 
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is null
+           then '00.200 '||a.frbgrnt_title 
+           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0)  
        END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
@@ -564,10 +664,20 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||a.frbgrnt_title                  
-         else frvcfda_cfda_code||' '||a.frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other' 
          END as "UniqueAwardNumber",  
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
@@ -668,10 +778,20 @@ group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.
          when substr(frvcfda_cfda_code, 4,3) = '000' 
              then '00.070 Federal - Other'
          when substr(frvcfda_cfda_code, 1,2) = '99'
-             then '00.070 Federal - Other'  
-         when frvcfda_cfda_code = '93.848'
-             then'93.847 '||a.frbgrnt_title                  
-         else frvcfda_cfda_code||' '||a.frbgrnt_title  
+             then '00.070 Federal - Other'   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is not null
+             then'93.847 '||nvl(frbgrnt_sponsor_id, 0)   
+         when frvcfda_cfda_code = '93.848' and frbgrnt_sponsor_id is null
+             then'93.847 '||frbgrnt_title                                 
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no 
+             then frvcfda_cfda_code||' '||nvl(frbgrnt_sponsor_id, 0)
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no = frvcfda_internal_id_no
+             then frvcfda_cfda_code||' '||frbgrnt_title  
+         when frbgrnt_sponsor_id is not null and frbgrnt_cfda_internal_id_no is null
+         then '00.070 '||nvl(frbgrnt_sponsor_id, 0)  
+         when frbgrnt_sponsor_id is null and frbgrnt_cfda_internal_id_no is null  
+         then '00.070 '||frbgrnt_title 
+         else '00.070 Federal - Other'  
        END, 
        CASE 
            when f.spraddr_zip is null and f.spraddr_natn_code is null
@@ -702,10 +822,25 @@ union all
 SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodStartDate",
          to_char(to_date('&&end_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodEndDate",       
          CASE 
-           when c.ftvfund_ftyp_code in ('4A', '4Y') then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code in ('4C', '4E') then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code = '4G' then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0)  
-           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
+            when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is null
+           then '00.070 '||a.frbgrnt_title         
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is not null            
+           then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is null            
+           then '00.000 '||a.frbgrnt_title
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0) 
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is null
+           then '00.200 '||a.frbgrnt_title 
+           else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0) 
          END as  "UniqueAwardNumber,",  
          a.frbgrnt_code RecipientAccountNumber,
          CASE 
@@ -801,9 +936,24 @@ from frbgrnt a, ftvfund c, fgbtrnd d, fabinvh e,  spraddr f,
      and d.fgbtrnd_doc_code = Docs.doccd                                    
 group by d.fgbtrnd_doc_code||' '||d.fgbtrnd_item_num||' '||d.fgbtrnd_seq_num, a.frbgrnt_code,  
       CASE 
-           when c.ftvfund_ftyp_code in ('4A', '4Y') then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code in ('4C', '4E') then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
-           when c.ftvfund_ftyp_code = '4G' then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0)  
+           when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.070 '||nvl(a.frbgrnt_sponsor_id, 0)
+            when c.ftvfund_ftyp_code in ('4A', '4Y') 
+            and a.frbgrnt_sponsor_id is null
+           then '00.070 '||a.frbgrnt_title         
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is not null            
+           then '00.000 '||nvl(a.frbgrnt_sponsor_id, 0)
+           when c.ftvfund_ftyp_code in ('4C', '4E')
+            and a.frbgrnt_sponsor_id is null            
+           then '00.000 '||a.frbgrnt_title
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is not null
+           then '00.200 '||nvl(a.frbgrnt_sponsor_id, 0) 
+           when c.ftvfund_ftyp_code = '4G' 
+            and a.frbgrnt_sponsor_id is null
+           then '00.200 '||a.frbgrnt_title 
            else '99.999 '||nvl(a.frbgrnt_sponsor_id, 0) 
       END, 
        CASE 
