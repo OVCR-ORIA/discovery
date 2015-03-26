@@ -43,6 +43,16 @@ class SchemeNonExistent(Exception):
     """
     pass
 
+class RelationshipNonExistent(Exception):
+    """
+    Raised when an unknown relationship is specified.
+    """
+
+class RelationshipNonExistent(Exception):
+    """
+    Raised when an unknown relationship is specified.
+    """
+
 def _write_with_integrity( db, stmt, params ):
     """
     Generic function for writing an insert statement with foreign key
@@ -54,20 +64,23 @@ def _write_with_integrity( db, stmt, params ):
         params: a tuple for substitution in the statement
 
     Returns:
-        None
+        int: the number of rows affected by the write statement
 
     Raises:
         MasterNonExistentEntity: if the SQL statement fails due to
             reference integrity constraints
     """
+    num_rows_affected = None
+
     db.start()
     try:
-        db.write( stmt, params )
+        num_rows_affected = db.write( stmt, params )
     except IntegrityError as e:
         raise MasterNonExistentEntity( e.args )
     finally:
         db.finish()
-    return
+
+    return num_rows_affected
 
 def add_external_org( db, name, source_id, comment=None, edu=False,
                       biz=False, org=False, gov=False ):
@@ -121,7 +134,7 @@ def add_external_org_alias( db, org_id, alias, source_id, lang="en",
         comment: a descriptive comment about the source of this alias
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_id or source_id is not valid
@@ -130,11 +143,11 @@ def add_external_org_alias( db, org_id, alias, source_id, lang="en",
                   "( external_org, alias, lang, source, " + \
                   "source_comment ) " + \
                   "VALUES ( %s, %s, %s, %s, %s );"
-    _write_with_integrity( db, update_stmt,
+    num_rows_affected = _write_with_integrity( db, update_stmt,
                            ( org_id, alias, lang, source_id,
                              comment ) )
 
-    return
+    return num_rows_affected
 
 def add_external_org_other_id( db, org_id, other_id, scheme_id,
                                source_id, comment=None ):
@@ -154,7 +167,7 @@ def add_external_org_other_id( db, org_id, other_id, scheme_id,
             information
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_id, scheme_id, or source_id is
@@ -165,11 +178,11 @@ def add_external_org_other_id( db, org_id, other_id, scheme_id,
                   "( master_id, other_id, scheme, source, " + \
                   "source_comment ) " + \
                   "VALUES ( %s, %s, %s, %s, %s );"
-    _write_with_integrity( db, update_stmt,
+    num_rows_affected = _write_with_integrity( db, update_stmt,
                            ( org_id, other_id, scheme_id, source_id,
                              comment ) )
 
-    return
+    return num_rows_affected
 
 def add_external_org_postcode( db, org_id, postcode_id, source_id,
                                comment=None ):
@@ -188,7 +201,7 @@ def add_external_org_postcode( db, org_id, postcode_id, source_id,
             postcode
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_id, postcode_id, or source_id
@@ -199,10 +212,10 @@ def add_external_org_postcode( db, org_id, postcode_id, source_id,
                   "( external_org, postcode, source, " + \
                   "source_comment ) " + \
                   "VALUES ( %s, %s, %s, %s );"
-    _write_with_integrity( db, update_stmt,
+    num_rows_affected = _write_with_integrity( db, update_stmt,
                            ( org_id, postcode_id, source_id,
                              comment ) )
-    return
+    return num_rows_affected
 
 def add_external_org_relationship( db, org_1_id, org_2_id,
                                    rel_type_id, source_id,
@@ -224,7 +237,7 @@ def add_external_org_relationship( db, org_1_id, org_2_id,
             relationship information
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_1_id, org_2_id, rel_type_id,
@@ -234,11 +247,11 @@ def add_external_org_relationship( db, org_1_id, org_2_id,
                   "master_rel_external_external " + \
                   "( ext1, ext2, rel, source, source_comment ) " + \
                   "VALUES ( %s, %s, %s, %s, %s );"
-    _write_with_integrity( db, update_stmt,
+    num_rows_affected = _write_with_integrity( db, update_stmt,
                            ( org_1_id, org_2_id, rel_type_id,
                              source_id, comment ) )
 
-    return
+    return num_rows_affected
 
 def del_external_org( db, org_id, source_id, comment=None ):
     """
@@ -257,11 +270,13 @@ def del_external_org( db, org_id, source_id, comment=None ):
             deletion
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_id or source_id is not valid
     """
+    num_rows_affected = 0
+
     db.start()
     find_stmt = "SELECT id FROM master_external_org WHERE id = %s;"
     org_row = db.read( find_stmt, ( org_id, ) )
@@ -269,18 +284,19 @@ def del_external_org( db, org_id, source_id, comment=None ):
 
     if org_row is None:
         # We didn’t find anything to expire.
-        return
+        return 0
 
     # Delete the organization’s properties.  These will silently
     # succeed if already expired.  We run the risk of doing a little
     # extra work if the organization was already deleted, but this
     # will clean up anything inadvertently added.
-    del_external_org_other_id( db, org_id, "*", None, source_id,
-                               comment )
-    del_external_org_postcode( db, org_id, "*", source_id, comment )
-    del_external_org_relationship( db, org_id, "*", None, source_id,
-                                   comment )
-    del_external_org_alias( db, org_id, "*", source_id,
+    num_rows_affected += del_external_org_other_id( db, org_id, "*", None,
+                            source_id, comment )
+    num_rows_affected += del_external_org_postcode( db, org_id, "*", source_id,
+                            comment )
+    num_rows_affected += del_external_org_relationship( db, org_id, "*", None,
+                            source_id, comment )
+    num_rows_affected += del_external_org_alias( db, org_id, "*", source_id,
                             comment=comment )
 
     # Delete the org itself.
@@ -294,9 +310,9 @@ def del_external_org( db, org_id, source_id, comment=None ):
 
     update_stmt += " WHERE id = %s AND valid_end IS NOT NULL;"
     params += ( org_id, )
-    _write_with_integrity( db, update_stmt, ( params ) )
+    num_rows_affected += _write_with_integrity( db, update_stmt, ( params ) )
 
-    return
+    return num_rows_affected
 
 def del_external_org_alias( db, org_id, alias, source_id, lang="en",
                             comment=None ):
@@ -319,7 +335,7 @@ def del_external_org_alias( db, org_id, alias, source_id, lang="en",
             removal
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_id or source_id is not valid
@@ -337,7 +353,7 @@ def del_external_org_alias( db, org_id, alias, source_id, lang="en",
 
     if alias_row is None:
         # We didn’t find anything to expire.
-        return
+        return 0
 
     update_stmt = "UPDATE master_external_org_alias " + \
                   "SET valid_end = NOW(), source = %s"
@@ -354,9 +370,9 @@ def del_external_org_alias( db, org_id, alias, source_id, lang="en",
         update_stmt += " AND alias = %s AND lang = %s"
         params += ( alias, lang )
     update_stmt += ";"
-    _write_with_integrity( db, update_stmt, ( params ) )
+    num_rows_affected = _write_with_integrity( db, update_stmt, ( params ) )
 
-    return
+    return num_rows_affected
 
 def del_external_org_other_id( db, org_id, other_id, scheme_id,
                                source_id, comment=None ):
@@ -397,7 +413,7 @@ def del_external_org_other_id( db, org_id, other_id, scheme_id,
 
     if other_link is None:
         # We didn’t find anything to expire.
-        return
+        return 0
 
     update_stmt = "UPDATE master_external_org_other_id " + \
                   "SET valid_end = NOW(), source = %s"
@@ -414,9 +430,9 @@ def del_external_org_other_id( db, org_id, other_id, scheme_id,
         update_stmt += " AND other_id = %s AND scheme = %s"
         params += ( other_id, scheme_id )
     update_stmt += ";"
-    _write_with_integrity( db, update_stmt, ( params ) )
+    num_rows_affected = _write_with_integrity( db, update_stmt, ( params ) )
 
-    return
+    return num_rows_affected
 
 def del_external_org_postcode( db, org_id, postcode_id, source_id,
                                comment=None ):
@@ -436,7 +452,7 @@ def del_external_org_postcode( db, org_id, postcode_id, source_id,
         comment: a descriptive comment about the source of the removal
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_id, postcode_id, or source_id
@@ -455,7 +471,7 @@ def del_external_org_postcode( db, org_id, postcode_id, source_id,
 
     if postcode_link is None:
         # We didn’t find anything to expire.
-        return
+        return 0
 
     update_stmt = "UPDATE master_external_org_postcode " + \
                   "SET valid_end = NOW(), source = %s"
@@ -472,9 +488,9 @@ def del_external_org_postcode( db, org_id, postcode_id, source_id,
         update_stmt += " AND postcode = %s "
         params += ( postcode_id, )
     update_stmt += ";"
-    _write_with_integrity( db, update_stmt, ( params ) )
+    num_rows_affected = _write_with_integrity( db, update_stmt, ( params ) )
 
-    return
+    return num_rows_affected
 
 def del_external_org_relationship( db, org_1_id, org_2_id,
                                    rel_type_id, source_id,
@@ -498,7 +514,7 @@ def del_external_org_relationship( db, org_1_id, org_2_id,
         comment: a descriptive comment about the source of the removal
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_1_id, org_2_id, rel_type_id,
@@ -519,7 +535,7 @@ def del_external_org_relationship( db, org_1_id, org_2_id,
 
     if org_rel is None:
         # We didn’t find anything to expire.
-        return
+        return 0
 
     update_stmt = "UPDATE master_rel_external_external " + \
                   "SET valid_end = NOW(), source = %s"
@@ -538,9 +554,9 @@ def del_external_org_relationship( db, org_1_id, org_2_id,
         update_stmt += "ext1 = %s AND ext2 = %s AND rel = %s"
         params += ( org_1_id, org_2_id, rel_type_id )
     update_stmt += " AND valid_end IS NULL;"
-    _write_with_integrity( db, update_stmt, ( params ) )
+    num_rows_affected = _write_with_integrity( db, update_stmt, ( params ) )
 
-    return
+    return num_rows_affected
 
 def get_data_source_id(db, source_name):
     """
@@ -653,25 +669,27 @@ def merge_external_org( db, keep_id, lose_id, source_id,
             assertions
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if keep_id, lose_id, or source_id is
             not valid
 
     """
+    num_rows_affected = 0
+
     # Copy aliases.
     db.start()
     alias_add_stmt = "INSERT IGNORE INTO " + \
                      "master_external_org_alias " + \
                      "( external_org, alias, lang, source, " + \
                      "source_comment ) " + \
-                     "SELECT %s, alias, lang, source, " + \
+                     "SELECT %s AS external_org, alias, lang, source, " + \
                      "source_comment " + \
                      "FROM master_external_org_alias " + \
                      "WHERE external_org = %s AND valid_end IS NULL;"
     alias_add_params = ( keep_id, lose_id )
-    db.write( alias_add_stmt, alias_add_params )
+    num_rows_affected += db.write( alias_add_stmt, alias_add_params )
     db.finish()
 
     # Copy other IDs.
@@ -680,12 +698,12 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                    "master_external_org_other_id " + \
                    "( master_id, other_id, scheme, source, " + \
                    "source_comment ) " + \
-                   "SELECT %s, other_id, scheme, source, " + \
+                   "SELECT %s AS master_id, other_id, scheme, source, " + \
                    "source_comment " + \
                    "FROM master_external_org_other_id " + \
                    "WHERE master_id = %s AND valid_end IS NULL;"
     ids_add_params = ( keep_id, lose_id )
-    db.write( ids_add_stmt, ids_add_params )
+    num_rows_affected += db.write( ids_add_stmt, ids_add_params )
     db.finish()
 
     # Copy postcodes.
@@ -694,11 +712,11 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                     "master_external_org_postcode " + \
                     "( external_org, postcode, source, " + \
                     "source_comment ) " + \
-                    "SELECT %s, postcode, source, source_comment " + \
+                    "SELECT %s AS external_org, postcode, source, source_comment " + \
                     "FROM master_external_org_postcode " + \
                     "WHERE external_org = %s AND valid_end IS NULL;"
     post_add_params = ( keep_id, lose_id )
-    db.write( post_add_stmt, post_add_params )
+    num_rows_affected += db.write( post_add_stmt, post_add_params )
     db.finish()
 
     # Copy relationships.  This is a little tricky in that we need to
@@ -710,30 +728,30 @@ def merge_external_org( db, keep_id, lose_id, source_id,
                      "master_rel_external_external " + \
                      "( ext1, ext2, rel, source, " + \
                      "source_comment ) " + \
-                     "SELECT %s, ext2, rel, source, " + \
+                     "SELECT %s AS ext1, ext2, rel, source, " + \
                      "source_comment " + \
                      "FROM master_rel_external_external " + \
                      "WHERE ext1 = %s AND ext2 <> %s " + \
                      "AND valid_end IS NULL;"
     rel_add_1_params = ( keep_id, lose_id, keep_id )
-    db.write( rel_add_1_stmt, rel_add_1_params )
+    num_rows_affected += db.write( rel_add_1_stmt, rel_add_1_params )
     rel_add_2_stmt = "INSERT IGNORE INTO " + \
                      "master_rel_external_external " + \
                      "( ext1, ext2, rel, source, " + \
                      "source_comment ) " + \
-                     "SELECT ext1, %s, rel, source, " + \
+                     "SELECT ext1, %s AS ext2, rel, source, " + \
                      "source_comment " + \
                      "FROM master_rel_external_external " + \
                      "WHERE ext2 = %s AND ext1 <> %s " + \
                      "AND valid_end IS NULL;"
     rel_add_2_params = ( keep_id, lose_id, keep_id )
-    db.write( rel_add_2_stmt, rel_add_2_params )
+    num_rows_affected += db.write( rel_add_2_stmt, rel_add_2_params )
     db.finish()
 
     # Delete the losing entity and all its properties.
-    del_external_org( db, lose_id, source_id, comment )
+    num_rows_affected += del_external_org( db, lose_id, source_id, comment )
 
-    return
+    return num_rows_affected
 
 def rename_external_org( db, org_id, new_name, source_id,
                          comment=None, alias_old_name=True,
@@ -769,12 +787,14 @@ def rename_external_org( db, org_id, new_name, source_id,
             True
 
     Returns:
-        None
+        int: the number of rows affected
 
     Raises:
         MasterNonExistentEntity: if org_id is not valid, or if
             source_id is not valid and alias_old_name is True
     """
+    num_rows_affected = 0
+
     db.start()
     find_stmt = "SELECT name FROM master_external_org " + \
                 "WHERE id = %s;"
@@ -790,10 +810,78 @@ def rename_external_org( db, org_id, new_name, source_id,
 
     update_stmt = "UPDATE master_external_org SET name = %s " + \
                   "WHERE id = %s;"
-    _write_with_integrity( db, update_stmt, ( new_name, org_id ) )
+    num_rows_affected += _write_with_integrity( db, update_stmt,
+                            ( new_name, org_id ) )
 
     if alias_old_name:
-        add_external_org_alias( db, org_id, old_name, source_id,
-                                lang=old_name_lang, comment=comment )
+        num_rows_affected += add_external_org_alias( db, org_id, old_name,
+                                source_id, lang=old_name_lang, comment=comment )
 
-    return
+    return num_rows_affected
+
+def get_master_id_for_other_id(db, other_id, scheme_id):
+    """
+    Get the master external_org ID for a given other_id and scheme_id.
+
+    Args:
+        db: The db instance
+        other_id: The other id
+        scheme_id: The scheme id
+
+    Returns:
+        str: The master external_org ID or None if none found
+    """
+    db.start()
+    find_stmt = "SELECT master_id FROM master_external_org_other_id " + \
+                "WHERE other_id = %s AND scheme = %s AND valid_end IS NULL;"
+    result = db.read(find_stmt, (other_id, scheme_id, ))
+    db.finish()
+
+    if result is not None:
+        result = result[0]
+
+    return result
+
+def get_relationship_type_id(db, relationship):
+    """
+    Get the relationship identifier for a given relationship name.
+
+    Args:
+        db: The db instance
+        relationship: The relationship name
+
+    Returns:
+        str: The relationship id for the given relationship name
+
+    Raises:
+        RelationshipNonExistent: If an unknown relationship is specified
+    """
+    db.start()
+    find_stmt = "SELECT id FROM master_org_relationship_type " + \
+                "WHERE name = %s;"
+    result = db.read(find_stmt, (relationship, ))
+    db.finish()
+
+    if result is None:
+        raise RelationshipNonExistent("Unknown relationship: %s" % relationship)
+
+    relationship_id = result[0]
+    return relationship_id
+
+def get_supported_relationship_types(db):
+    """
+    Get the list of supported relationship types.
+
+    Args:
+        db: The db instance
+
+    Returns:
+        list of str: The supported relationship types
+    """
+    db.start()
+    find_stmt = "SELECT name FROM master_org_relationship_type;"
+    results = db.read_many(find_stmt, ())
+    db.finish()
+
+    relationship_types = [result[0] for result in results]
+    return relationship_types

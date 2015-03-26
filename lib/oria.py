@@ -419,7 +419,7 @@ class DBConnection( object ):
         if self._debug:
             print "*** RESULT: %i rows affected" % ( rows )
 
-        return
+        return rows
 
 class ORIALookupError( Exception ):
     """
