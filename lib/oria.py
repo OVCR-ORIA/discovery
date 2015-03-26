@@ -101,18 +101,17 @@ class ArgumentParser( argparse.ArgumentParser ):
         values, so offline, test, debug, and db_write are available.
         """
         # Call the superclass for the literal arguments.
-        arguments = argparse.ArgumentParser.parse_args( self )
+        args = argparse.ArgumentParser.parse_args( self )
 
         # But then do some logic to invent some additional useful
         # values.
-        arguments.db_write = not arguments.offline and \
-            not arguments.test
+        args.db_write = not args.offline and not args.test
         if args.database == "master":
             args.database = DB_BASE
         elif args.database == "test":
             args.database = DB_BASE_TEST
 
-        return arguments
+        return args
 
 class DBConnection( object ):
     """
