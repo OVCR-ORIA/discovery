@@ -59,9 +59,6 @@ def main():
     db = oria.DBConnection(
         offline=args.offline,
         db_write=args.db_write,
-        port=3307,
-        db="oria_test",
-        host="127.0.0.1",
         debug=args.debug
     )
 
@@ -104,6 +101,10 @@ def main():
     # Lookup table for other_id -> master_id mapping (improves performance)
     master_id_cache = {}
 
+    # Records the total number of rows that were changed as a result of running
+    # this script
+    total_affected_rows = 0
+
     Organization = namedtuple(
         "Organization",
         "other_id master_id name classification"
@@ -131,19 +132,9 @@ def main():
                 if other_id is None or len(other_id) == 0:
                     break
 
-                # try to find master ID in cache - use "null" instead of None
-                # since None can be a valid value indicating our DB doesn't
-                # have that mapping
-                master_id = master_id_cache.get(other_id, "null")
-                if master_id == "null":
-                    master_id = get_master_id_for_other_id(
-                        db, other_id, scheme_id
-                    )
-                    master_id_cache[other_id] = master_id
-
                 org = Organization(
                     other_id = other_id,
-                    master_id = master_id,
+                    master_id = None,
                     name = col_map[level_prefix + "name"],
                     classification = col_map[level_prefix + "description"]
                 )
@@ -151,17 +142,6 @@ def main():
                 # ignore Match Gift Prog orgs (and all further children)
                 if org.classification == "Match Gft Prog":
                     break
-
-                # check whether we know about this organization (skip if not)
-                # if org is Branch Office or Defunct Company, no master_id
-                # needed
-                if (org.master_id is None and org.classification not in \
-                    ["Branch Office", "Defunct Company"]):
-                    print "WARN: No record for %s id %s for %s (%s)" % \
-                        (args.scheme, org.other_id, org.name, \
-                        org.classification)
-                    org = None
-                    continue
 
                 if None not in (prev_org, org):
                     yield (prev_org, org)
@@ -173,7 +153,13 @@ def main():
         Office or Defunct Company were already in our oria_master as discrete
         entities, then merge them with the correct parent.
         """
-        print "*** combine_or_merge:", prev_org, ",", org
+        n = 0  # number of rows affected
+
+        # check to ensure we have records for at least one organizationsin our DB
+        if (prev_org.master_id, org.master_id) == (None, None):
+            return 0
+
+        if args.debug: print "*** combine_or_merge:", prev_org, ",", org
 
         # check if we have separate (discrete) entities for prev_org and org
         if None not in (prev_org.master_id, org.master_id):
@@ -181,7 +167,7 @@ def main():
                 # merge external orgs
                 print "Merging external_orgs %s (%s) and %s (%s)" % \
                     (prev_org.name, prev_org.master_id, org.name, org.master_id)
-                merge_external_org(db, prev_org.master_id, org.master_id,
+                n += merge_external_org(db, prev_org.master_id, org.master_id,
                     source_id, args.comment)
                 # invalidate cache since org was merged into prev_org
                 del master_id_cache[org.other_id]
@@ -204,77 +190,102 @@ def main():
             print "Add other_id mapping and alias for %s (%s) as %s (%s)" % \
                 (master_name, master_id, other_name, other_id)
             # assert the BO or DC id as "other_id" for the external_org
-            add_external_org_other_id(db, master_id, other_id,
-                scheme_id, source_id, args.comment)
+            n += add_external_org_other_id(db, master_id, other_id,
+                    scheme_id, source_id, args.comment)
             # update the alias table with the BO or DC name
-            add_external_org_alias(db, master_id, other_name, source_id,
-                comment=args.comment)
+            n += add_external_org_alias(db, master_id, other_name, source_id,
+                    comment=args.comment)
             # invalidate the id cache for org
             master_id_cache.pop(other_id, None)
+
+        return n
 
     def assert_subsidiary(prev_org, org):
         """
         Assert a subsidiary relationship between prev_org and org as
         'org' is a subsidiary of 'prev_org'.
         """
-        print "*** subsidiary:", prev_org, ",", org
+        n = 0  # number of rows affected
 
-        if prev_org.master_id is not None:
-            print "Add relationship: %s (%s) is subsidiary of %s (%s)" % \
-                (org.name, org.master_id, prev_org.name, prev_org.master_id)
-            add_external_org_relationship(db, org.master_id,
+        if args.debug: print "*** subsidiary:", prev_org, ",", org
+
+        # check to ensure we have records for both organizations in our DB
+        if None in (prev_org.master_id, org.master_id):
+            for o in (prev_org, org):
+                # if not, report them
+                if o.master_id is None:
+                    print "WARN: No record for %s id %s for %s (%s)" % \
+                        (args.scheme, o.other_id, o.name, \
+                        o.classification)
+            return 0
+
+        print "Add relationship: %s (%s) is subsidiary of %s (%s)" % \
+            (org.name, org.master_id, prev_org.name, prev_org.master_id)
+        n += add_external_org_relationship(db, org.master_id,
                 prev_org.master_id, REL_SUBSID_ID, source_id, args.comment)
-        else:
-            print ("WARN: Cannot establish %s relationship to %s. " + \
-                "Missing target external_org id!") % \
-                (org.classification, prev_org.name)
+
+        return n
 
     def assert_foundation(prev_org, org):
         """
         Assert a foundation relationship between prev_org and org as
         'org' is a foundation attached to 'prev_org'.
         """
-        print "*** foundation:", prev_org, ",", org
+        n = 0  # number of rows affected
 
-        if prev_org.master_id is not None:
-            print ("Add relationship: %s (%s) is a foundation " + \
-                "attached to %s (%s)") % \
-                (org.name, org.master_id, prev_org.name, prev_org.master_id)
-            add_external_org_relationship(db, org.master_id,
+        if args.debug: print "*** foundation:", prev_org, ",", org
+
+        # check to ensure we have records for both organizations in our DB
+        if None in (prev_org.master_id, org.master_id):
+            for o in (prev_org, org):
+                # if not, report them
+                if o.master_id is None:
+                    print "WARN: No record for %s id %s for %s (%s)" % \
+                        (args.scheme, o.other_id, o.name, \
+                        o.classification)
+            return 0
+
+        print ("Add relationship: %s (%s) is a foundation " + \
+            "attached to %s (%s)") % \
+            (org.name, org.master_id, prev_org.name, prev_org.master_id)
+        n += add_external_org_relationship(db, org.master_id,
                 prev_org.master_id, REL_FOUNDATION_ID, source_id, args.comment)
-        else:
-            print ("WARN: Cannot establish %s relationship to %s. " + \
-                "Missing target external_org id!") % \
-                (org.classification, prev_org.name)
+
+        return n
+
+    def query_id_cache(other_id):
+        """
+        Query the cache to retrieve the master_id associated with other_id.
+        In case of a cache miss, retrieve the ID from the DB and update cache.
+        """
+        # try to find master ID in cache - use "null" instead of None
+        # since None can be a valid value indicating our DB doesn't
+        # have that mapping
+        master_id = master_id_cache.get(other_id, "null")
+        if master_id == "null":
+            master_id = get_master_id_for_other_id(db, other_id, scheme_id)
+            master_id_cache[other_id] = master_id
+
+        return master_id
+
 
     # for all unique org pairs
     for (prev_org, org) in OrderedSet(get_org_rel_pairs()):
-        # since we're processing data in order, the only reason prev_org would
-        # not be found in the cache is because it's been merged with another
-        # organization (at which point it was removed from the cache)
-        # now retrieve the new master_id for the merged organization and use it
-        if prev_org.other_id not in master_id_cache:
-            master_id = get_master_id_for_other_id(
-                db, prev_org.other_id, scheme_id
-            )
-            master_id_cache[prev_org.other_id] = master_id
-            prev_org = prev_org._replace(master_id=master_id)
+        # retrieve the master_id for each organization (if exists)
+        prev_org = prev_org._replace(master_id=query_id_cache(prev_org.other_id))
+        org = org._replace(master_id=query_id_cache(org.other_id))
 
-        if (prev_org.master_id, org.master_id) != (None, None):
-            if org.classification in ["Branch Office", "Defunct Company"]:
-                combine_or_merge_orgs(prev_org, org)
+        if org.classification in ["Branch Office", "Defunct Company"]:
+            total_affected_rows += combine_or_merge_orgs(prev_org, org)
 
-            elif org.classification in ["Subsidiary", "Subsidiary Co.",
-                "Foreign Subsid", "U.S. Subsidiary", "Division"]:
-                assert_subsidiary(prev_org, org)
+        elif org.classification in ["Subsidiary", "Subsidiary Co.",
+            "Foreign Subsid", "U.S. Subsidiary", "Division"]:
+            total_affected_rows += assert_subsidiary(prev_org, org)
 
-            elif org.classification in ["Foundation"]:
-                assert_foundation(prev_org, org)
-        else:
-            print ("WARN: Could not assert relationship between %s (%s) " + \
-                "and %s (%s) as %s. Missing external_org IDs!") % \
-                (prev_org.name, prev_org.other_id, \
-                    org.name, org.other_id, org.classification)
+        elif org.classification in ["Foundation"]:
+            total_affected_rows += assert_foundation(prev_org, org)
+
+    print "Total affected rows: {:,}".format(total_affected_rows)
 
     return
 

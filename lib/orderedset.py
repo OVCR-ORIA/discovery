@@ -4,8 +4,8 @@
 """
 Set that remembers the original insertion order
 
-Implementation based on a doubly linked link and an internal dictionary. 
-This design gives OrderedSet the same big-Oh running times as regular sets 
+Implementation based on a doubly linked list and an internal dictionary. 
+This design gives OrderedSet the same big-Oh running times as regular sets
 including O(1) adds, removes, and lookups as well as O(n) iteration.
 
 From: http://code.activestate.com/recipes/576694/
@@ -16,7 +16,7 @@ import collections
 class OrderedSet(collections.MutableSet):
 
     def __init__(self, iterable=None):
-        self.end = end = [] 
+        self.end = end = []
         end += [None, end, end]         # sentinel node for doubly linked list
         self.map = {}                   # key --> [key, prev, next]
         if iterable is not None:
@@ -35,7 +35,7 @@ class OrderedSet(collections.MutableSet):
             curr[2] = end[1] = self.map[key] = [key, curr, end]
 
     def discard(self, key):
-        if key in self.map:        
+        if key in self.map:
             key, prev, next = self.map.pop(key)
             prev[2] = next
             next[1] = prev
@@ -71,7 +71,7 @@ class OrderedSet(collections.MutableSet):
             return len(self) == len(other) and list(self) == list(other)
         return set(self) == set(other)
 
-            
+
 if __name__ == '__main__':
     s = OrderedSet('abracadaba')
     t = OrderedSet('simsalabim')
