@@ -53,10 +53,20 @@ def main():
         type=open,
         help="CSV file to read"
     )
+
+    # Parse arguments and figure out which DB to use
     args = parser.parse_args()
+
+    if args.db is None:
+        args.db = oria.DB_BASE_TEST
+
+    if args.debug:
+        print "*** Using database: %s (port %s)" % (args.db, args.port)
 
     # Open a connection to the ORIA database
     db = oria.DBConnection(
+        db = args.db,
+        port = args.port,
         offline=args.offline,
         db_write=args.db_write,
         debug=args.debug

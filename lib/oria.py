@@ -21,13 +21,11 @@ Example usage:
     args = parser.parse_args()
 
     # Pick which database to connect to.
-    if args.database is None:
-        db_name = oria.DB_BASE_TEST
-    else:
-        db_name = args.database
+    if args.db is None:
+        args.db = oria.DB_BASE_TEST
 
     # Connect to the database.
-    db = oria.DBConnection( db=db_name, offline=args.offline,
+    db = oria.DBConnection( db=args.db, offline=args.offline,
                             db_write=args.db_write, debug=args.debug )
 
     # Look up ID by key:
@@ -93,6 +91,8 @@ class ArgumentParser( argparse.ArgumentParser ):
         self.add_argument( "--db", "--database",
                            choices=[ "master", "test" ],
                            help="database to write to" )
+        self.add_argument( "--port", type=int, default=DB_PORT,
+                           help="database server port number")
         return
 
     def parse_args( self ):
@@ -106,10 +106,10 @@ class ArgumentParser( argparse.ArgumentParser ):
         # But then do some logic to invent some additional useful
         # values.
         args.db_write = not args.offline and not args.test
-        if args.database == "master":
-            args.database = DB_BASE
-        elif args.database == "test":
-            args.database = DB_BASE_TEST
+        if args.db == "master":
+            args.db = DB_BASE
+        elif args.db == "test":
+            args.db = DB_BASE_TEST
 
         return args
 
