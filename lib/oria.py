@@ -395,6 +395,14 @@ class DBConnection( object ):
         NOTE that we assume that a cursor exists; that this is an
         insert or update statement; and that the statement itself is
         relatively sane and sanitized.
+
+        Args:
+            statement: The statement to execute
+            params: The parameters for the statement
+
+        Returns:
+            int: the number of rows affected as a result of executing
+                 the statement (returns 0 if running in debug/test mode)
         """
         if not self._db_write:
             if self._debug:
@@ -403,7 +411,7 @@ class DBConnection( object ):
                     "statement:\n      " + \
                     "%s\n    with" % ( statement ) + \
                     "\n        %s" % ( ", ".join( str_params ) )
-            return None
+            return 0
 
         # Stringify for debugging.
         if self._debug:
