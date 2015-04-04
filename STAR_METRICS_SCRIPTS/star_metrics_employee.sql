@@ -447,7 +447,7 @@ SELECT  to_char( to_date('&&beg_date', 'DD-MON-YYYY'), 'YYYY-MM-DD')  "PeriodSta
          else '00.070 Federal - Other'  
          END as "UniqueAwardNumber",
          frbgrnt_code as "RecipientAccountNumber",
-         spriden_pidm as "Emp ID Number",
+         utl_raw.cast_to_raw( c => dbms_obfuscation_toolkit.md5( input_string => spriden_pidm ) ) as "Emp ID Number",
          CASE
          when substr(nbrjobs_ecls_code, 1,1) = 'A'
               then 'Faculty'
