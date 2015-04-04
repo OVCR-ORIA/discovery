@@ -21,13 +21,11 @@ Example usage:
     args = parser.parse_args()
 
     # Pick which database to connect to.
-    if args.database is None:
-        db_name = oria.DB_BASE_TEST
-    else:
-        db_name = args.database
+    if args.db is None:
+        args.db = oria.DB_BASE_TEST
 
     # Connect to the database.
-    db = oria.DBConnection( db=db_name, offline=args.offline,
+    db = oria.DBConnection( db=args.db, offline=args.offline,
                             db_write=args.db_write, debug=args.debug )
 
     # Look up ID by key:
@@ -93,6 +91,8 @@ class ArgumentParser( argparse.ArgumentParser ):
         self.add_argument( "--db", "--database",
                            choices=[ "master", "test" ],
                            help="database to write to" )
+        self.add_argument( "--port", type=int, default=DB_PORT,
+                           help="database server port number")
         return
 
     def parse_args( self ):
@@ -101,18 +101,17 @@ class ArgumentParser( argparse.ArgumentParser ):
         values, so offline, test, debug, and db_write are available.
         """
         # Call the superclass for the literal arguments.
-        arguments = argparse.ArgumentParser.parse_args( self )
+        args = argparse.ArgumentParser.parse_args( self )
 
         # But then do some logic to invent some additional useful
         # values.
-        arguments.db_write = not arguments.offline and \
-            not arguments.test
-        if args.database == "master":
-            args.database = DB_BASE
-        elif args.database == "test":
-            args.database = DB_BASE_TEST
+        args.db_write = not args.offline and not args.test
+        if args.db == "master":
+            args.db = DB_BASE
+        elif args.db == "test":
+            args.db = DB_BASE_TEST
 
-        return arguments
+        return args
 
 class DBConnection( object ):
     """
@@ -396,6 +395,14 @@ class DBConnection( object ):
         NOTE that we assume that a cursor exists; that this is an
         insert or update statement; and that the statement itself is
         relatively sane and sanitized.
+
+        Args:
+            statement: The statement to execute
+            params: The parameters for the statement
+
+        Returns:
+            int: the number of rows affected as a result of executing
+                 the statement (returns 0 if running in debug/test mode)
         """
         if not self._db_write:
             if self._debug:
@@ -404,7 +411,7 @@ class DBConnection( object ):
                     "statement:\n      " + \
                     "%s\n    with" % ( statement ) + \
                     "\n        %s" % ( ", ".join( str_params ) )
-            return None
+            return 0
 
         # Stringify for debugging.
         if self._debug:
@@ -419,7 +426,7 @@ class DBConnection( object ):
         if self._debug:
             print "*** RESULT: %i rows affected" % ( rows )
 
-        return
+        return rows
 
 class ORIALookupError( Exception ):
     """
