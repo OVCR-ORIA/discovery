@@ -8,8 +8,8 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"20 March 2015"
-__version__ = 1.5
+__date__ = u"4 April 2015"
+__version__ = 1.6
 
 # Adjust the load path for common data loading operations.
 import sys
@@ -17,10 +17,6 @@ from os import path
 
 CWD = path.dirname( path.abspath( __file__ ) )
 LIB_PATH = path.join( path.dirname( CWD ), 'lib' )
-sys.path.append( LIB_PATH )
-
-# Common data loading tools.
-import oria
 
 import argparse
 import csv
@@ -205,8 +201,8 @@ def construct_duns( state, nation, postcode ):
     Create a pseudo-DUNS number out of a state, nation, and postal
     code.  Handle some weird edge cases.
     """
-    state = state.strip()
-    nation = nation.strip()
+    state = state.strip() # These are probably not necessary...
+    nation = nation.strip() # ... but the data is wonky.
     postcode = postcode.strip()
 
     # Ideally, Z+postcode for US, F+postcode for foreign, but the
@@ -215,7 +211,7 @@ def construct_duns( state, nation, postcode ):
     # Normally, a null nation means USA, but there are many Canadian
     # provinces given without nation, and null state codes; assume
     # they’re all foreign.
-    if nation == "" and US_STATES.index( state ):
+    if nation == "" and state in US_STATES:
         nation = "US"
 
     # We could add more structural validity checks here, but this is
@@ -223,12 +219,13 @@ def construct_duns( state, nation, postcode ):
     if nation == "US":
         if postcode == "":
             return "Z00000-0000"
-        else:
-            return "Z" + postcode
-    else:
-        if len( postcode ) > 9:
-            return "F000000000"
-        return "F" + postcode
+
+        return "Z" + postcode
+
+    if len( postcode ) > 9:
+        return "F000000000"
+
+    return "F" + postcode
 
 def construct_unique_award_number( cfda, sponsor, ftype, title ):
     """
@@ -251,8 +248,6 @@ def construct_unique_award_number( cfda, sponsor, ftype, title ):
     elif cfda == "93.848":
         cfda = "93.847"
 
-    # In original SQL, this substitution happens only if CFDA is NULL;
-    # if not, the value 0 is used instead.  An error?
     if sponsor.strip() == "":
         sponsor = title
 
@@ -512,7 +507,7 @@ SET TRIMSPOOL ON;
     wfile.write( "@" + CWD + "/star_metrics_award.sql\n" )
     wfile.write( "@" + CWD + "/star_metrics_subaward.sql\n" )
     wfile.write( "@" + CWD + "/new_vendor.sql\n" )
-    wfile.write( "@" + CWD + "/star_metrics_employee_anon.sql\n" )
+    wfile.write( "@" + CWD + "/star_metrics_employee.sql\n" )
     wfile.close()
 
     # Run sqlplus on the file.  Capture the output.
