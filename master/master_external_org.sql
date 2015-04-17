@@ -69,4 +69,18 @@ CREATE TABLE IF NOT EXISTS master_external_org_postcode (
   FOREIGN KEY fk_master_external_org_postcode_org (external_org) REFERENCES master_external_org (id),
   FOREIGN KEY fk_master_external_org_postcode_postcode (postcode) REFERENCES postcode (id),
   FOREIGN KEY fk_master_external_org_postcode_source (source) REFERENCES master_data_source (id)
-) COMMENT = 'Associates external locations with physical locations or mailing address, using postal code or approximations thereof.';
+) COMMENT = 'Associates external organizations with physical locations or mailing addresses, using postal code or approximations thereof.';
+
+DROP TABLE IF EXISTS master_external_org_address;
+CREATE TABLE IF NOT EXISTS master_external_org_address (
+  external_org INTEGER(15) NOT NULL COMMENT 'Reference to the organization at this address',
+  address INTEGER(15) NOT NULL COMMENT 'Reference to an address of this organization',
+  valid_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Time of creation of this record',
+  valid_end TIMESTAMP NULL COMMENT 'Time after which this record is not considered valid',
+  source INTEGER(15) NOT NULL COMMENT 'Reference to the source or provenance for this record',
+  source_comment VARCHAR(255) NULL COMMENT 'Additional notes on the provenance of this record',
+  PRIMARY KEY (external_org, address),
+  FOREIGN KEY fk_master_external_org_address_org (external_org) REFERENCES master_external_org (id),
+  FOREIGN KEY fk_master_external_org_address_address (address) REFERENCES address (id),
+  FOREIGN KEY fk_master_external_org_address_source (source) REFERENCES master_data_source (id)
+) COMMENT = 'Associates external organizations with possibly geocoded physical locations or mailing addresses.';

@@ -52,8 +52,8 @@ Example usage:
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"23 March 2015"
-__version__ = 1.5
+__date__ = u"15 April 2015"
+__version__ = 1.6
 
 import argparse
 from MySQLdb import connect
@@ -128,6 +128,7 @@ class DBConnection( object ):
         """
         self._db = None
         self._cursor = None
+        self._fake_id = 0L
         self._offset = None
 
         self.offline = offline
@@ -191,6 +192,30 @@ class DBConnection( object ):
 
         self._cursor = None
 
+    def get_last_id( self ):
+        """
+        Return the ID created from the last INSERT statement.
+
+        Args:
+            None
+
+        Returns:
+            long: the ID last created
+        """
+        if self._db_write:
+            if self._debug:
+                print "*** Getting last created ID from database: "
+            last_id = db.read( "SELECT LAST_INSERT_ID()", () )[0]
+        else:
+            if self._debug:
+                print "*** Faking last created ID from database: "
+            last_id = self._fake_id
+
+        if self._debug:
+            print "      %d\n" % last_id
+
+        return last_id
+
     def get_or_set_id( self, cache, table_name, key_name, columns,
                        id="id" ):
         """
@@ -237,10 +262,8 @@ class DBConnection( object ):
                 print "*** Faking database write: setting " + \
                     "%s to %s in %s\n" % ( key_name, key_value,
                                            table_name )
-            if "NEXT_ID" not in cache:
-                cache[ "NEXT_ID" ] = 1
-            cache[ key_value ] = cache[ "NEXT_ID" ]
-            cache[ "NEXT_ID" ] += 1
+            self._fake_id += 1
+            cache[ key_value ] = self._fake_id
             return cache[ key_value ]
 
         # Write to the database, update the cache, and return the ID.
@@ -411,6 +434,7 @@ class DBConnection( object ):
                     "statement:\n      " + \
                     "%s\n    with" % ( statement ) + \
                     "\n        %s" % ( ", ".join( str_params ) )
+            self._fake_id += 1
             return 0
 
         # Stringify for debugging.
