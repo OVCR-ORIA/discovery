@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS address (
   source INTEGER(15) NOT NULL COMMENT 'Reference to the source or provenance for this record',
   source_comment VARCHAR(255) NULL COMMENT 'Additional notes on the provenance of this record',
   PRIMARY KEY (id),
-  UNIQUE (addr_string),
   FOREIGN KEY fk_address_state_province (state_province_ref) REFERENCES country_div_1 (id),
   FOREIGN KEY fk_address_postcode (postcode_ref) REFERENCES postcode (id),
   FOREIGN KEY fk_address_nation (nation_ref) REFERENCES country (id),

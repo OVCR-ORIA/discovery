@@ -98,7 +98,8 @@ QUERY_SELECT_CD = "SELECT cd.id " + \
                   "AND cd.district_number = %s " + \
                   "AND cd.valid_end IS NULL;"
 QUERY_SELECT_LOCATION = "SELECT id, x(location) AS latitude, " + \
-                        "y(location) AS longitude FROM address " + \
+                        "y(location) AS longitude " + \
+                        "FROM address " + \
                         "WHERE addr_string = %s " + \
                         "AND valid_end IS NULL;"
 QUERY_SELECT_STATE_PROV = "SELECT id FROM country_div_1 " + \

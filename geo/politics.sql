@@ -1,5 +1,5 @@
 DROP TABLE IF EXISTS congressional_district;
-CREATE TABLE IF NOT EXISTS congressional_district 
+CREATE TABLE IF NOT EXISTS congressional_district (
   id INTEGER(15) NOT NULL AUTO_INCREMENT,
   state INTEGER(15) NOT NULL COMMENT 'Reference to US state',
   district_number INTEGER(2) NOT NULL COMMENT 'District number, within the state',
