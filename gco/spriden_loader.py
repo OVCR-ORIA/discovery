@@ -12,12 +12,18 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"10 July 2014"
-__version__ = 1.0
+__date__ = u"20 April 2015"
+__version__ = 1.1
 
 # Adjust the load path for common data loading operations.
 import sys
-sys.path.append( '../lib' )
+from os import path
+sys.path.append(
+    path.join(
+        path.dirname( path.dirname( path.abspath( __file__ ) ) ),
+        'lib'
+        )
+    )
 
 # Common data loading tools.
 import oria
@@ -60,7 +66,10 @@ def main():
     args = parser.parse_args()
 
     # Connect to the database.
-    db = oria.DBConnection( offline=args.offline,
+    # Open a database connection (default to test DB).
+    if args.db is None:
+        args.db = oria.DB_BASE_TEST
+    db = oria.DBConnection( db=args.db, offline=args.offline,
                             db_write=args.db_write, debug=args.debug )
 
     # We’ll do this all in one transaction in case something goes
