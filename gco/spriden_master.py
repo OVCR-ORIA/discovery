@@ -8,8 +8,8 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"29 December 2014"
-__version__ = 1.0
+__date__ = u"22 April 2015"
+__version__ = 1.1
 
 # Adjust the load path for common data loading operations.
 import sys
@@ -22,12 +22,17 @@ sys.path.append(
     )
 
 # Common data loading tools.
+import master
 import oria
 
 import re
 
 BANNER_RE = r'@[0-9]{8}'
 BANNER_REF_RE = r'(\s*(TERM\s*)?Use\s*)?(@[0-9]{8})'
+BANNER_SCHEME = 3
+PIDM_SCHEME = 1
+SOURCE_COMMENT = "spriden_master.py v%0.1f" % __version__
+SOURCE_ID = 1
 
 def update_master( db, spriden_row, target_pidm=None ):
     """
@@ -50,7 +55,8 @@ def update_master( db, spriden_row, target_pidm=None ):
             "AND other.scheme = scheme.id " +
             "AND other_id IN ( %s, %s ) ) " +
             "OR ( scheme.name = 'Banner' " +
-            "AND other.scheme = scheme.id AND other_id = %s );",
+            "AND other.scheme = scheme.id AND other_id = %s )" +
+            "AND other.valid_end IS NULL;",
         ( pidm, target_pidm, banner )
     )
     for pidm_corr_row in pidm_corr_rows:
@@ -75,7 +81,7 @@ def update_master( db, spriden_row, target_pidm=None ):
     names = [ last ]
     alias_rows = db.read_many(
         "SELECT spriden_last_name FROM spriden_alias " +
-            "WHERE spriden_pidm = %s",
+            "WHERE spriden_pidm = %s;",
         ( pidm, )
     )
     for alias_row in alias_rows:
@@ -90,7 +96,9 @@ def update_master( db, spriden_row, target_pidm=None ):
                     "FROM master_external_org AS org, " +
                     "master_external_org_alias AS alias " +
                     "WHERE alias.external_org = org.id " +
-                    "AND ( name = %s OR alias = %s );",
+                    "AND ( name = %s OR alias = %s )" +
+                    "AND org.valid_end IS NULL " +
+                    "AND alias.valid_end IS NULL;",
                 ( name, name )
             )
             for org_row in org_rows:
@@ -104,51 +112,26 @@ def update_master( db, spriden_row, target_pidm=None ):
 
     # If we still haven’t found a match, make a new entity.
     if master_id is None:
-        db.start()
         # Note that we pop the primary name out of the list at this
         # point, so it won’t get added as an alias.
-        db.write(
-            "INSERT INTO master_external_org ( name ) VALUES ( %s );",
-            ( names.pop( 0 ), )
-        )
-        db.finish()
-        db.start()
-        master_id = db.read( "SELECT LAST_INSERT_ID()",
-                             () )[0]
-        db.finish()
+        master_id = master.add_external_org( db, names.pop(0),
+                                             SOURCE_ID,
+                                             SOURCE_COMMENT )
 
     # Update aliases.  (For lack of better information, assume all
     # names are in English.)
-    db.start()
     for name in names:
-        db.write(
-            "INSERT IGNORE INTO master_external_org_alias " +
-                "( external_org, alias, lang ) " +
-                "VALUES ( %s, %s, 'en' );",
-            ( master_id, name )
-        )
-    db.finish()
+        master.add_external_org_alias( db, master_id, name, SOURCE_ID,
+                                       comment=SOURCE_COMMENT )
 
     # Note the correlation between the PIDM, the Banner ID, and the
     # master entity.
-    db.start()
-    db.write(
-        "INSERT IGNORE INTO master_external_org_other_id " +
-            "( master_id, other_id, scheme ) " +
-            "VALUES ( %s, %s, " +
-            "( SELECT id FROM master_other_id_scheme " +
-            "WHERE name = 'PIDM' ) );",
-        ( master_id, pidm )
-    )
-    db.write(
-        "INSERT IGNORE INTO master_external_org_other_id " +
-            "( master_id, other_id, scheme ) " +
-            "VALUES ( %s, %s, " +
-            "( SELECT id FROM master_other_id_scheme " +
-            "WHERE name = 'Banner' ) );",
-        ( master_id, banner )
-    )
-    db.finish()
+    master.add_external_org_other_id( db, master_id, pidm,
+                                      PIDM_SCHEME, SOURCE_ID,
+                                      SOURCE_COMMENT )
+    master.add_external_org_other_id( db, master_id, banner,
+                                      BANNER_SCHEME, SOURCE_ID,
+                                      SOURCE_COMMENT )
 
     return
 
@@ -166,9 +149,11 @@ def main():
     # These names imply “read” and “write,” but we really use db_w for
     # other, smaller reads as well, when db_r has an active
     # long-running cursor.  Let’s say the w stands for “working.”
-    db_r = oria.DBConnection( offline=args.offline,
+    if args.db is None:
+        args.db = oria.DB_BASE_TEST
+    db_r = oria.DBConnection( db=args.db, offline=args.offline,
                               db_write=args.db_write, debug=args.debug )
-    db_w = oria.DBConnection( offline=args.offline,
+    db_w = oria.DBConnection( db=args.db, offline=args.offline,
                               db_write=args.db_write, debug=args.debug )
 
     # Regexp for Banner IDs.
