@@ -8,8 +8,8 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"22 April 2015"
-__version__ = 1.1
+__date__ = u"23 April 2015"
+__version__ = 1.2
 
 # Adjust the load path for common data loading operations.
 import sys
@@ -51,11 +51,11 @@ def update_master( db, spriden_row, target_pidm=None ):
         "SELECT DISTINCT master_id " +
             "FROM master_external_org_other_id AS other, " +
             "master_other_id_scheme AS scheme " +
-            "WHERE ( scheme.name = 'PIDM' " +
+            "WHERE ( ( scheme.name = 'PIDM' " +
             "AND other.scheme = scheme.id " +
             "AND other_id IN ( %s, %s ) ) " +
             "OR ( scheme.name = 'Banner' " +
-            "AND other.scheme = scheme.id AND other_id = %s )" +
+            "AND other.scheme = scheme.id AND other_id = %s ) )" +
             "AND other.valid_end IS NULL;",
         ( pidm, target_pidm, banner )
     )
@@ -165,7 +165,7 @@ def main():
 
     # Get every non-person from the spriden_norm table.
     spriden_rows = db_r.read_many(
-        "SELECT norm.* FROM spriden_norm AS norm, " +
+        "SELECT DISTINCT norm.* FROM spriden_norm AS norm, " +
             "spriden_raw AS raw WHERE raw.spriden_entity_ind = 'C' " +
             "AND norm.spriden_pidm = raw.spriden_pidm",
         ()
