@@ -207,10 +207,10 @@ class DBConnection( object ):
                 print "*** Getting last created ID from database: "
             last_id = self.read( "SELECT LAST_INSERT_ID()", () )[0]
         else:
+            last_id = self._fake_id
             if self._debug:
                 print "*** Faking last created ID from database: " + \
                     "%d\n" % last_id
-            last_id = self._fake_id
 
         return last_id
 
