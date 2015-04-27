@@ -340,8 +340,10 @@ def main():
                                 GEOCODING_SOURCE_COMMENT,
                                 addr_id ) )
 
-        # Link the address with the organization.
-        add_org_to_addr( db, addr_id, org_id )
+        # Link the address with the organization, unless for some
+        # reason we don’t know about the organization.
+        if org_id is not None:
+            add_org_to_addr( db, addr_id, org_id )
 
         # If the address is in the United States, look for a
         # congressional district (less than a year old).
