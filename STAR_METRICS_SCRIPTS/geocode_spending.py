@@ -9,8 +9,8 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"16 April 2015"
-__version__ = 1.0
+__date__ = u"28 April 2015"
+__version__ = 1.1
 
 # Adjust the load path for common data loading operations.
 import sys
@@ -50,7 +50,7 @@ VENDOR_HEADER = [ "PeriodStartDate", "PeriodEndDate", "VendorPIDM",
                   "VendorAddress1", "VendorAddress2", "VendorCity",
                   "VendorState", "VendorNation", "VendorZIP",
                   "VendorPaymentAmount" ]
-ZIP_PLUS_RE = r'^([0-9]{5})-[0-9]{4}'
+ZIP_PLUS_RE = r'^([0-9]{5})(-?[0-9]{4})?'
 
 # Compile-once regexps (not actually constants but hey).
 zip_plus_re = re.compile( ZIP_PLUS_RE )
@@ -214,12 +214,12 @@ def main():
             pidm_cache[ pidm ] = org_id
 
         # For each address, construct an un-normalized string.
-        street1 = row[8].strip()
-        street2 = row[9].strip()
-        city = row[10].strip()
-        state = row[11].strip()
-        nation = row[12].strip()
-        postcode = row[13].strip()
+        street1 = row[9].strip()
+        street2 = row[10].strip()
+        city = row[11].strip()
+        state = row[12].strip()
+        nation = row[13].strip()
+        postcode = row[14].strip()
         addr_string = street1
         if street1 and ( street2 or city or state ):
             addr_string += ", "
@@ -250,10 +250,13 @@ def main():
             writer.writerow( row )
             continue
 
+        addr_id = lat = lon = addr_norm = None
+        st_prov_code = state # a reasonable best guess if we can’t
+        nation_code = nation # find them in the database
+        postcode_code = postcode
+
         # Look for that string in the database.
         db.start()
-        addr_id = st_prov_code = nation_code = lat = lon = \
-                  addr_norm = None
         addr_row = db.read( QUERY_SELECT_LOCATION,
                             ( addr_string, ) )
 
@@ -278,7 +281,7 @@ def main():
                 # information.
                 addr_struct = loc.raw[ "address_components" ]
                 st_prov_id = None
-                postcode_code = postcode_id = None
+                postcode_id = None
                 nation_id = None
                 for component in addr_struct:
                     if "administrative_area_level_1" in \
@@ -289,64 +292,65 @@ def main():
                     elif "country" in component[ "types" ]:
                         nation_code = component[ "short_name" ]
 
-                # Find database IDs for the nation and state or
-                # province.
-                if nation_code is not None:
-                    nation_id = db.fetch_id( "country", "iso3166",
-                                             nation_code,
-                                             cache=nation_cache )
-                if nation_id is not None and st_prov_code is not None:
-                    if nation_code in state_prov_cache and \
-                       st_prov_code in \
-                       state_prov_cache[ nation_code ]:
-                        st_prov_id = state_prov_cache[ nation_code ]\
-                                     [ st_prov_code ]
-                    if st_prov_id is None:
-                        st_prov_row = db.read( QUERY_SELECT_STATE_PROV,
-                                               ( nation_id,
-                                                 st_prov_code ) )
-                        if st_prov_row is not None:
-                            st_prov_id = st_prov_row[0]
-                            if nation_code not in state_prov_cache:
-                                state_prov_cache[ nation_code ] = {}
-                            state_prov_cache[ nation_code ]\
-                                [ st_prov_code ] = st_prov_id
+            # Find database IDs for the nation and state or
+            # province.
+            if nation_code is not None:
+                nation_id = db.fetch_id( "country", "iso3166",
+                                         nation_code,
+                                         cache=nation_cache )
+            if nation_id is not None and st_prov_code is not None:
+                if nation_code in state_prov_cache and \
+                   st_prov_code in \
+                   state_prov_cache[ nation_code ]:
+                    st_prov_id = state_prov_cache[ nation_code ]\
+                                 [ st_prov_code ]
+                if st_prov_id is None:
+                    st_prov_row = db.read( QUERY_SELECT_STATE_PROV,
+                                           ( nation_id,
+                                             st_prov_code ) )
+                    if st_prov_row is not None:
+                        st_prov_id = st_prov_row[0]
+                        if nation_code not in state_prov_cache:
+                            state_prov_cache[ nation_code ] = {}
+                        state_prov_cache[ nation_code ]\
+                            [ st_prov_code ] = st_prov_id
 
-                # If US, turn ZIP+4 and ZIP+9 into ZIP
-                if nation_code == "US" and postcode_code is not None:
-                    m = zip_plus_re.match( postcode_code )
-                    if m is not None:
-                        postcode_code = m.group(1)
-                    if postcode_code in zip_cache:
-                        postcode_id = zip_cache[ postcode_code ]
-                    else:
-                        zip_row = db.read( QUERY_SELECT_ZIP,
-                                           ( postcode_code,
-                                             nation_id ) )
-                        if zip_row is not None:
-                            postcode_id = zip_row[0]
-
-                # Store the geocode and address
-                if addr_id is None:
-                    db.write( QUERY_INSERT_ADDR_GEOCODE,
-                              ( street1, street2, city, state,
-                                postcode, nation, addr_string,
-                                addr_norm, st_prov_id, postcode_id,
-                                nation_id, lat, lon,
-                                GEOCODING_SOURCE_ID,
-                                GEOCODING_SOURCE_COMMENT ) )
-                    addr_id = db.get_last_id()
+            # If US, turn ZIP+4 and ZIP+9 into ZIP
+            if nation_code == "US" and postcode_code is not None:
+                m = zip_plus_re.match( postcode_code )
+                if m is not None:
+                    postcode_code = m.group(1)
+                if postcode_code in zip_cache:
+                    postcode_id = zip_cache[ postcode_code ]
                 else:
-                    db.write( QUERY_UPDATE_ADDR_GEOCODE,
-                              ( addr_norm, st_prov_id, postcode_id,
-                                nation_id, lat, lon,
-                                GEOCODING_SOURCE_ID,
-                                GEOCODING_SOURCE_COMMENT,
-                                addr_id ) )
+                    zip_row = db.read( QUERY_SELECT_ZIP,
+                                       ( postcode_code,
+                                         nation_id ) )
+                    if zip_row is not None:
+                        postcode_id = zip_row[0]
+
+            # Store the geocode and address
+            if addr_id is None:
+                db.write( QUERY_INSERT_ADDR_GEOCODE,
+                          ( street1, street2, city, state,
+                            postcode, nation, addr_string,
+                            addr_norm, st_prov_id, postcode_id,
+                            nation_id, lat, lon,
+                            GEOCODING_SOURCE_ID,
+                            GEOCODING_SOURCE_COMMENT ) )
+                addr_id = db.get_last_id()
+            else:
+                db.write( QUERY_UPDATE_ADDR_GEOCODE,
+                          ( addr_norm, st_prov_id, postcode_id,
+                            nation_id, lat, lon,
+                            GEOCODING_SOURCE_ID,
+                            GEOCODING_SOURCE_COMMENT,
+                            addr_id ) )
 
         # Link the address with the organization, unless for some
-        # reason we don’t know about the organization.
-        if org_id is not None:
+        # reason we don’t know about the organization, or if the
+        # address write still failed after all my hard work.
+        if org_id is not None and addr_id is not None:
             add_org_to_addr( db, addr_id, org_id )
 
         # If the address is in the United States, look for a
