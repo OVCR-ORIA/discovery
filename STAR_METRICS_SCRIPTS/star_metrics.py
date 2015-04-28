@@ -307,7 +307,7 @@ def handle_vendor_line( sql_line, csv_writer, csv_writer_detail ):
 
         # Add the award source information, account number, address,
         # and pseudo-DUNS to the detail report.
-        det_fields += row[3:11]
+        det_fields += row[3:12]
         det_fields.append( corrected_nation )
         det_fields.append( row[13] )
         det_fields.append( pseudo_duns )
