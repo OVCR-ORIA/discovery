@@ -44,11 +44,22 @@ GEOCODING_SOURCE_COMMENT = "geocode_spending.py v%0.1f" % __version__
 GEOCODING_SOURCE_ID = 6
 PIDM_ID = 1
 SUNLIGHT_API_KEY = "dccfea47c6814ee5bdbdd2b954271282"
-VENDOR_HEADER = [ "PeriodStartDate", "PeriodEndDate", "VendorPIDM",
-                  "CFDACode", "SponsorID", "FundTypeCode",
-                  "GrantTitle", "RecipientAccountNumber",
-                  "VendorAddress1", "VendorAddress2", "VendorCity",
-                  "VendorState", "VendorNation", "VendorZIP",
+VENDOR_HEADER = [ "PeriodStartDate",
+                  "PeriodEndDate",
+                  "VendorPIDM",
+                  "UniqueAwardNumber",
+                  "CFDACode",
+                  "SponsorID",
+                  "FundTypeCode",
+                  "GrantTitle",
+                  "RecipientAccountNumber",
+                  "VendorAddress1",
+                  "VendorAddress2",
+                  "VendorCity",
+                  "VendorState",
+                  "VendorNation",
+                  "VendorZIP",
+                  "VendorDunsNumber",
                   "VendorPaymentAmount" ]
 ZIP_PLUS_RE = r'^([0-9]{5})(-?[0-9]{4})?'
 
