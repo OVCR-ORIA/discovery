@@ -97,11 +97,13 @@ QUERY_SELECT_CD = "SELECT cd.id " + \
                   "WHERE st.code = %s AND cd.state = st.id " + \
                   "AND cd.district_number = %s " + \
                   "AND cd.valid_end IS NULL;"
-QUERY_SELECT_LOCATION = "SELECT a.id, c.iso3166, " + \
+QUERY_SELECT_LOCATION = "SELECT a.id, s.code, c.iso3166, " + \
                         "x(a.location) AS latitude, " + \
                         "y(a.location) AS longitude " + \
-                        "FROM address AS a, country AS c " + \
+                        "FROM address AS a, country AS c, " + \
+                        "country_div_1 AS s " + \
                         "WHERE a.addr_string = %s " + \
+                        "AND s.id = a.state_province_ref " + \
                         "AND c.id = a.nation_ref " + \
                         "AND a.valid_end IS NULL;"
 QUERY_SELECT_STATE_PROV = "SELECT id FROM country_div_1 " + \
@@ -250,13 +252,14 @@ def main():
 
         # Look for that string in the database.
         db.start()
-        addr_id = lat = lon = addr_norm = nation_code = None
+        addr_id = st_prov_code = nation_code = lat = lon = \
+                  addr_norm = None
         addr_row = db.read( QUERY_SELECT_LOCATION,
                             ( addr_string, ) )
 
         # If found, use the geocoding there.
         if addr_row is not None:
-            addr_id, nation_code, lat, lon = addr_row
+            addr_id, st_prov_code, nation_code, lat, lon = addr_row
 
         # If not, look up the geocode with geopy
         if lat is None or lon is None:
@@ -274,7 +277,7 @@ def main():
                 # Also parse the raw response for structured address
                 # information.
                 addr_struct = loc.raw[ "address_components" ]
-                st_prov_code = st_prov_id = None
+                st_prov_id = None
                 postcode_code = postcode_id = None
                 nation_id = None
                 for component in addr_struct:
