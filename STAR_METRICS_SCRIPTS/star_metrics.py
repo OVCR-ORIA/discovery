@@ -135,6 +135,7 @@ HEADERS = { "award" : # CSV header lines
                 [ "PeriodStartDate",
                   "PeriodEndDate",
                   "VendorPIDM",
+                  "UniqueAwardNumber",
                   "CFDACode",
                   "SponsorID",
                   "FundTypeCode",
@@ -146,6 +147,7 @@ HEADERS = { "award" : # CSV header lines
                   "VendorState",
                   "VendorNation",
                   "VendorZIP",
+                  "VendorDunsNumber",
                   "VendorPaymentAmount" ] }
 
 REPORTS = [ "award", "subaward", "vendor", "employee" ]
@@ -202,17 +204,11 @@ def construct_duns( state, nation, postcode ):
     code.  Handle some weird edge cases.
     """
     state = state.strip() # These are probably not necessary...
-    nation = nation.strip() # ... but the data is wonky.
-    postcode = postcode.strip()
+    postcode = postcode.strip() # ... but the data is wonky.
 
     # Ideally, Z+postcode for US, F+postcode for foreign, but the
-    # source data is bad.
-
-    # Normally, a null nation means USA, but there are many Canadian
-    # provinces given without nation, and null state codes; assume
-    # they’re all foreign.
-    if nation == "" and state in US_STATES:
-        nation = "US"
+    # source data is bad.  The nation should have been corrected
+    # before this is called.
 
     # We could add more structural validity checks here, but this is
     # the logic in the predecessor query.
@@ -253,6 +249,22 @@ def construct_unique_award_number( cfda, sponsor, ftype, title ):
 
     return cfda + " " + sponsor
 
+def correct_nation( state, nation ):
+    """
+    Given a state or province and a nation, makes US the explicit
+    nation if the state supports that conclusion.
+    """
+    state = state.strip() # These are probably not necessary...
+    nation = nation.strip() # ... but the data is wonky.
+
+    # Normally, a null nation means USA, but there are many Canadian
+    # provinces given without nation, and null state codes; assume
+    # they’re all foreign.
+    if nation == "" and state in US_STATES:
+        nation = "US"
+
+    return nation
+
 def handle_vendor_line( sql_line, csv_writer, csv_writer_detail ):
     """
     Given a line of quoted, comma-delimited SQL output and a CSV
@@ -268,34 +280,46 @@ def handle_vendor_line( sql_line, csv_writer, csv_writer_detail ):
     # For each row, generate the proper STAR METRICS report, but also
     # output the fully-detailed version.
     for row in csv_reader:
-        # Write out the full detail.
-        csv_writer_detail.writerow( row )
-
-        # Now construct the STAR METRICS report row.
-        # The first two fields are dates; use as-is.
+        # The first two fields are dates; use as-is.  The third is the
+        # PIDM, for detail.
         sm_fields = row[0:2]
+        det_fields = row[0:3]
 
         # Create the UniqueAwardNumber out of the CFDA code, sponsor
         # ID, fund type, and grant title.
-        sm_fields.append( construct_unique_award_number( row[3],
-                                                         row[4],
-                                                         row[5],
-                                                         row[6] ) )
+        unique_award = construct_unique_award_number( row[3],
+                                                      row[4],
+                                                      row[5],
+                                                      row[6] )
+        sm_fields.append( unique_award )
+        det_fields.append( unique_award )
 
         # Add the RecipientAccountNumber
         sm_fields.append( row[7] )
 
         # Build the pseudo-DUNS number out of the state, nation, and
         # ZIP or postal codes.
-        sm_fields.append( construct_duns( row[11],
-                                          row[12],
-                                          row[13] ) )
+        corrected_nation = correct_nation( row[11], row[12] )
+        pseudo_duns = construct_duns( row[11],
+                                      corrected_nation,
+                                      row[13] )
+        sm_fields.append( pseudo_duns )
+
+        # Add the award source information, account number, address,
+        # and pseudo-DUNS to the detail report.
+        det_fields += row[3:11]
+        det_fields.append( corrected_nation )
+        det_fields.append( row[13] )
+        det_fields.append( pseudo_duns )
 
         # Add the VendorPaymentAmount.
         sm_fields.append( row[14] )
+        det_fields.append( row[14] )
 
-        # Write out the STAR METRICS report.
+        # Write out the STAR METRICS report and the detailed report.
+        csv_writer_detail.writerow( det_fields )
         csv_writer.writerow( sm_fields )
+
     return
 
 def write_csv_line( sql_line, csv_writer, report_type ):
