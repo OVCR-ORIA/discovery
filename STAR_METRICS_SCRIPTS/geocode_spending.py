@@ -97,11 +97,13 @@ QUERY_SELECT_CD = "SELECT cd.id " + \
                   "WHERE st.code = %s AND cd.state = st.id " + \
                   "AND cd.district_number = %s " + \
                   "AND cd.valid_end IS NULL;"
-QUERY_SELECT_LOCATION = "SELECT id, x(location) AS latitude, " + \
-                        "y(location) AS longitude " + \
-                        "FROM address " + \
-                        "WHERE addr_string = %s " + \
-                        "AND valid_end IS NULL;"
+QUERY_SELECT_LOCATION = "SELECT a.id, c.iso3166, " + \
+                        "x(a.location) AS latitude, " + \
+                        "y(a.location) AS longitude " + \
+                        "FROM address AS a, country AS c " + \
+                        "WHERE a.addr_string = %s " + \
+                        "AND c.id = a.nation_ref " + \
+                        "AND a.valid_end IS NULL;"
 QUERY_SELECT_STATE_PROV = "SELECT id FROM country_div_1 " + \
                           "WHERE country = %s AND code = %s;"
 QUERY_SELECT_ZIP = "SELECT z.id FROM postcode AS z, " + \
@@ -248,14 +250,13 @@ def main():
 
         # Look for that string in the database.
         db.start()
-        addr_id = lat = lon = addr_norm = None
+        addr_id = lat = lon = addr_norm = nation_code = None
         addr_row = db.read( QUERY_SELECT_LOCATION,
                             ( addr_string, ) )
 
         # If found, use the geocoding there.
         if addr_row is not None:
-            addr_id = addr_row[0]
-            lat, lon = addr_row[1:3]
+            addr_id, nation_code, lat, lon = addr_row
 
         # If not, look up the geocode with geopy
         if lat is None or lon is None:
@@ -275,7 +276,7 @@ def main():
                 addr_struct = loc.raw[ "address_components" ]
                 st_prov_code = st_prov_id = None
                 postcode_code = postcode_id = None
-                nation_code = nation_id = None
+                nation_id = None
                 for component in addr_struct:
                     if "administrative_area_level_1" in \
                        component[ "types" ]:
@@ -417,10 +418,6 @@ def main():
         # Write out the result.
         row += [ lat, lon, cd_st, cd_num ]
         writer.writerow( row )
-
-        rowcount += 1
-        if rowcount >= 10:
-            break
 
     logging.info( "Vendor address geocoding complete." )
 
