@@ -267,6 +267,7 @@ def main():
         st_prov_code = state # a reasonable best guess if we can’t
         nation_code = nation # find them in the database
         postcode_code = postcode
+        st_prov_id = postcode_id = nation_id = None
 
         # Look for that string in the database.
         db.start()
@@ -293,9 +294,6 @@ def main():
                 # Also parse the raw response for structured address
                 # information.
                 addr_struct = loc.raw[ "address_components" ]
-                st_prov_id = None
-                postcode_id = None
-                nation_id = None
                 for component in addr_struct:
                     if "administrative_area_level_1" in \
                        component[ "types" ]:
