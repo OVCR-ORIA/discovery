@@ -253,10 +253,11 @@ def main():
             addr_id, lat, lon, nation_code, cd_st, cd_num, orgs = \
                 address_cache[ addr_string ]
             if org_id not in orgs:
-                db.start()
-                add_org_to_addr( db, addr_id, org_id )
+                if addr_id is not None:
+                    db.start()
+                    add_org_to_addr( db, addr_id, org_id )
+                    db.finish()
                 orgs.append( org_id )
-                db.finish()
             row += [ lat, lon, cd_st, cd_num ]
             writer.writerow( row )
             continue
