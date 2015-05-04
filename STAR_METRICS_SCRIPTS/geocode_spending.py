@@ -370,7 +370,10 @@ def main():
             district_row = db.read( QUERY_SELECT_ADDR_CD, ( addr_id, ) )
             if district_row is not None:
                 cd_id, cd_st, cd_num = district_row[0:3]
-            else:
+
+            # We need lat/long to look up CDs... maybe we could fall
+            # back to ZIP, but not yet.
+            elif lat is not None and lon is not None:
                 # If we didn’t find it, look it up with sunlight.
                 logging.info( "Getting CD for %s (%f, %f)." %
                               ( addr_string, lat, lon) )
