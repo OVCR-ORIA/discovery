@@ -138,7 +138,7 @@ class DBConnection( object ):
         if not self.offline:
             self._db = connect( host=host, port=port,
                                 user=user, passwd=passwd,
-                                db=db )
+                                db=db, charset="utf8" )
         return
 
     def fetch_id( self, table_name, column_name, column_value,
