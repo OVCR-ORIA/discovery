@@ -9,8 +9,8 @@ Written for the University of Illinois.
 """
 
 __author__ = u"Christopher R. Maden <crism@illinois.edu>"
-__date__ = u"28 April 2015"
-__version__ = 1.1
+__date__ = u"4 May 2015"
+__version__ = 1.2
 
 # Adjust the load path for common data loading operations.
 import sys
@@ -111,11 +111,12 @@ QUERY_SELECT_CD = "SELECT cd.id " + \
 QUERY_SELECT_LOCATION = "SELECT a.id, s.code, c.iso3166, " + \
                         "x(a.location) AS latitude, " + \
                         "y(a.location) AS longitude " + \
-                        "FROM address AS a, country AS c, " + \
-                        "country_div_1 AS s " + \
+                        "FROM address AS a " + \
+                        "LEFT OUTER JOIN country AS c " + \
+                        "ON c.id = a.nation_ref " + \
+                        "LEFT OUTER JOIN country_div_1 AS s " + \
+                        "ON s.id = a.state_province_ref " + \
                         "WHERE a.addr_string = %s " + \
-                        "AND s.id = a.state_province_ref " + \
-                        "AND c.id = a.nation_ref " + \
                         "AND a.valid_end IS NULL;"
 QUERY_SELECT_STATE_PROV = "SELECT id FROM country_div_1 " + \
                           "WHERE country = %s AND code = %s;"
