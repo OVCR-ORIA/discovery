@@ -254,7 +254,7 @@ def main():
             addr_id, lat, lon, nation_code, cd_st, cd_num, orgs = \
                 address_cache[ addr_string ]
             if org_id not in orgs:
-                if addr_id is not None:
+                if org_id is not None and addr_id is not None:
                     db.start()
                     add_org_to_addr( db, addr_id, org_id )
                     db.finish()
