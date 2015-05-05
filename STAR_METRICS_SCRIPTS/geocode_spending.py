@@ -263,11 +263,12 @@ def main():
             writer.writerow( row )
             continue
 
-        addr_id = lat = lon = addr_norm = None
         st_prov_code = state # a reasonable best guess if we can’t
         nation_code = nation # find them in the database
         postcode_code = postcode
+        addr_id = lat = lon = addr_norm = None
         st_prov_id = postcode_id = nation_id = None
+        cd_id = cd_st = cd_num = None
 
         # Look for that string in the database.
         db.start()
