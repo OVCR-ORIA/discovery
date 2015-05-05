@@ -424,7 +424,7 @@ def main():
                                 CONGRESSIONAL_SOURCE_ID,
                                 CONGRESSIONAL_SOURCE_COMMENT ) )
 
-            if cd_st != st_prov_code:
+            if cd_st is not None and cd_st != st_prov_code:
                 logging.warn( "Possible state mismatch: address " +
                               "%d has state %s but CD %s-%d." %
                               ( addr_id, st_prov_code, cd_st,
